@@ -255,6 +255,8 @@ btn_start.onclick = function doTheThing() {
         trianglesArray.push({first:(parseFloat(object[i])-1),second:(parseFloat(object[i+1]))-1,third:(parseFloat(object[i+2])-1),distance:0,Nx:0,Ny:0,Nz:0});
     }
     toCameraCoordinates();
+    calculateTrianglesNormal();
+    normalizePointNormals();
     distanceTriangleOrigin();
     flatToScreenPoint();
     determinatePixels();
