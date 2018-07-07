@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="main.css">
+    <title>PG Second Project</title>
+</head>
+<body>
+    <input type="file" id="objInput" accept=".byu" hidden/>
+    <input type="file" id="camInput" accept=".cfg" hidden/>
+    <input type="file" id="ligInput" accept=".txt" hidden/>
+    <div class="btns-group" style="width:600px">
+        <div class="btns-load" style="width:100%">
+            <button class="inputBUTTON" id="btn_obj" style="width: 33%">Object File</button>
+            <button class="inputBUTTON" id="btn_cam" style="width: 34%">Camera File</button>
+            <button class="inputBUTTON" id="btn_lig" style="width: 33%">Light File</button>
+        </div>
+        <button id="btn_start" style="width:100%">Just Do It!</button>
+    </div>
+    <div id="container">
+        <canvas id="canvas" width="fill" height="fill"></canvas>
+    </div>
+    <script type="text/javascript" src="main.js"></script>
+</body>
+</html>
