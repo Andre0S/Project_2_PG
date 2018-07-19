@@ -75,6 +75,15 @@ function scalarVector(vector, scalar) {
     return {x:(vector.x * scalar) , y:(vector.y * scalar) , z:(vector.z * scalar)};
 }
 
+function PI(u,v){
+    return (u.x*v.x) + (u.y*v.y) + (u.z*v.z);
+}
+
+function vectorSum(u,v){
+    let aux = {x:u.x+v.x, y: u.y+v.y, z: u.z+v.z};
+    return aux;
+}
+
 function cosinTwoVectors(firstVector,secondVector) {
     let returner = (((firstVector.x * secondVector.x) + (firstVector.y * secondVector.y) + (firstVector.z * secondVector.z))/
         (Math.sqrt(Math.pow(firstVector.x,2) + Math.pow(firstVector.y,2) + Math.pow(firstVector.z,2)) * Math.sqrt(Math.pow(secondVector.x,2) + Math.pow(secondVector.y,2) + Math.pow(secondVector.z,2))));
@@ -159,6 +168,32 @@ function distanceTriangleOrigin() {
     }
 }
 
+function getR(L,N){
+    //L e N são vetores.
+    let aux;
+    aux = scalarVector(N,(2+(PI(L,N))));
+    return {x:aux.x-L.x,y:aux.y-L.y,z:aux.z-L.z};
+}
+
+function allLight(){
+    for(let i=0;i<pointsArray.length;i++){
+        let luz;
+        let N = {x:pointsArray[i].Nx,y:pointsArray[i].Ny,z:pointsArray.Nz};
+        N = normalize(N);
+        let L = {x:L_point.x-pointsArray[i].x, y:L_point.y-pointsArray[i].y, z:L_point.z-pointsArray[i.z]};
+        L = normalize(L);
+        let V = {x:C_point.x-pointsArray[i].x, y:C_point.y-pointsArray[i].y, z:C_point.z-pointsArray[i].z};
+        V = normalize(V);
+        let R = getR(L,N);
+        R = normalize(R);
+        luz = vectorSum(scalarVector(A_color,ARef_constant),scalarVector(D_vector,PI(N,L) + (Spec_constant*Math.pow(PI(R,V),Rugo_constant))));
+        pointsArray[i].lx = luz.x;
+        pointsArray[i].ly = luz.y;
+        pointsArray[i].lz = luz.z;
+    }
+
+}
+
 function flatToScreenPoint() {
     for (let i = 0; i < pointsArray.length; i++) {
         pointsArray[i].Ys = ((pointsArray[i].y * distance_cameraPlane) / (pointsArray[i].z * halfHeight));
@@ -179,7 +214,7 @@ function getLineGrowth(x,y){//recebe um vetor
     return (b/a);//isso vai retornar o a, mas para usar o 1/a, basta invereter
 }
 
-function drawTriangles() {
+function drawTriangles() {//algoritmo do pintor
     ctx.clearRect(0,0,canvas.width,canvas.height);
     trianglesArray.sort(function(a, b){return a.distance - b.distance});
     for (let i = trianglesArray.length - 1; i > -1; i--) {
@@ -196,6 +231,7 @@ function drawTriangles() {
         ctx.closePath();
     }
 }
+
 
 let container = document.getElementById('container');
 let canvas = document.getElementById('canvas');
@@ -217,15 +253,17 @@ btn_visual_obj.onclick = function clickObj(){btn_obj.click();};
 btn_visual_cam.onclick = function clickCam(){btn_cam.click();};
 btn_visual_lig.onclick = function clickCam(){btn_lig.click();};
 btn_start.onclick = function doTheThing() {
+    //luz
     light = light.split(/[\r\n\s]+/).filter(function(el) {return ((el.length >0))});
-    L_point = {x:parseFloat(light[0]),y:parseFloat(light[1]),z:parseFloat(light[2])};
-    ARef_constant = parseFloat(light[3]);
-    A_color = {x:parseFloat(light[4]),y:parseFloat(light[5]),z:parseFloat(light[6])};
-    Difu_constant = parseFloat(light[7]);
-    D_vector = {x:parseFloat(light[8]),y:parseFloat(light[9]),z:parseFloat(light[10])};
-    Spec_constant = parseFloat(light[11]);
-    L_color = {x:parseFloat(light[12]),y:parseFloat(light[13]),z:parseFloat(light[14])};
-    Rugo_constant = parseFloat(light[15]);
+    L_point = {x:parseFloat(light[0]),y:parseFloat(light[1]),z:parseFloat(light[2])};//posicao da luz
+    ARef_constant = parseFloat(light[3]);//ka
+    A_color = {x:parseFloat(light[4]),y:parseFloat(light[5]),z:parseFloat(light[6])};//IA
+    Difu_constant = parseFloat(light[7]);//Kd
+    D_vector = {x:parseFloat(light[8]),y:parseFloat(light[9]),z:parseFloat(light[10])};//Ip
+    Spec_constant = parseFloat(light[11]);//ks
+    L_color = {x:parseFloat(light[12]),y:parseFloat(light[13]),z:parseFloat(light[14])};//IL
+    Rugo_constant = parseFloat(light[15]);//n
+    //luz
     camera = camera.split(/[\r\n\s]+/).filter(function(el) {return ((el.length >0))});
     C_point = {x:parseFloat(camera[0]),y:parseFloat(camera[1]),z:parseFloat(camera[2])};
     N_vector = {x:parseFloat(camera[3]),y:parseFloat(camera[4]),z:parseFloat(camera[5])};
@@ -249,7 +287,7 @@ btn_start.onclick = function doTheThing() {
     let initTriangles = 2 + (points*3);
     let end = initTriangles + (triangles * 3);
     for (let i = initPoints; i < initTriangles; i+=3) {
-        pointsArray.push({x:parseFloat(object[i]),y:parseFloat(object[i+1]),z:parseFloat(object[i+2]),Nx:0,Ny:0,Nz:0,Xs:0,Ys:0,Px:0,Py:0});
+        pointsArray.push({x:parseFloat(object[i]),y:parseFloat(object[i+1]),z:parseFloat(object[i+2]),Nx:0,Ny:0,Nz:0,Xs:0,Ys:0,Px:0,Py:0,lx:0,ly:0,lz:0});
     }
     for (let i = initTriangles; i < end; i+=3) {
         trianglesArray.push({first:(parseFloat(object[i])-1),second:(parseFloat(object[i+1]))-1,third:(parseFloat(object[i+2])-1),distance:0,Nx:0,Ny:0,Nz:0});
@@ -257,6 +295,7 @@ btn_start.onclick = function doTheThing() {
     toCameraCoordinates();
     calculateTrianglesNormal();
     normalizePointNormals();
+    allLight();
     distanceTriangleOrigin();
     flatToScreenPoint();
     determinatePixels();
