@@ -34,7 +34,7 @@ function loadLight(evt) {
         reader2.onload = function() {
             light = reader2.result;
         }
-        reader2.readAsText(light_file);
+        reader2.readAsText(lig_file);
     } else {
         alert("Failed to load file");
     }
@@ -75,18 +75,17 @@ function scalarVector(vector, scalar) {
     return {x:(vector.x * scalar) , y:(vector.y * scalar) , z:(vector.z * scalar)};
 }
 
-function PI(u,v){
-    return (u.x*v.x) + (u.y*v.y) + (u.z*v.z);
+function multiplicateFactorByFactor(firstVector,secondVector){
+    return (firstVector.x*secondVector.x) + (firstVector.y*secondVector.y) + (firstVector.z*secondVector.z);
 }
 
-function vectorSum(u,v){
-    let aux = {x:u.x+v.x, y: u.y+v.y, z: u.z+v.z};
+function vectorSum(firstVector,secondVector){
+    let aux = {x:firstVector.x+secondVector.x, y: firstVector.y+secondVector.y, z: firstVector.z+secondVector.z};
     return aux;
 }
 
 function cosinTwoVectors(firstVector,secondVector) {
-    let returner = (((firstVector.x * secondVector.x) + (firstVector.y * secondVector.y) + (firstVector.z * secondVector.z))/
-        (Math.sqrt(Math.pow(firstVector.x,2) + Math.pow(firstVector.y,2) + Math.pow(firstVector.z,2)) * Math.sqrt(Math.pow(secondVector.x,2) + Math.pow(secondVector.y,2) + Math.pow(secondVector.z,2))));
+    let returner = ((firstVector.x * secondVector.x) + (firstVector.y * secondVector.y) + (firstVector.z * secondVector.z));
     return returner;
 }
 
@@ -100,6 +99,12 @@ function toCameraCoordinates() {
     let futureZ = 0;
     let futureY = 0;
     let futureX = 0;
+    futureZ = (L_point.z - C_point.z);
+    futureY = (L_point.y - C_point.y);
+    futureX = (L_point.x - C_point.x);
+    L_point.x = (futureX*U_vector.x + futureY*U_vector.y + futureZ*U_vector.z);
+    L_point.y = (futureX*V_vector.x + futureY*V_vector.y + futureZ*V_vector.z);
+    L_point.z = (futureX*N_vector.x + futureY*N_vector.y + futureZ*N_vector.z);
     for (let i = 0; i < pointsArray.length; i++) {
         futureZ = (pointsArray[i].z - C_point.z);
         futureY = (pointsArray[i].y - C_point.y);
@@ -168,67 +173,327 @@ function distanceTriangleOrigin() {
     }
 }
 
-function getR(L,N){
-    //L e N são vetores.
-    let aux;
-    aux = scalarVector(N,(2+(PI(L,N))));
-    return {x:aux.x-L.x,y:aux.y-L.y,z:aux.z-L.z};
-}
-
-function allLight(){
-    for(let i=0;i<pointsArray.length;i++){
-        let luz;
-        let N = {x:pointsArray[i].Nx,y:pointsArray[i].Ny,z:pointsArray.Nz};
-        N = normalize(N);
-        let L = {x:L_point.x-pointsArray[i].x, y:L_point.y-pointsArray[i].y, z:L_point.z-pointsArray[i.z]};
-        L = normalize(L);
-        let V = {x:C_point.x-pointsArray[i].x, y:C_point.y-pointsArray[i].y, z:C_point.z-pointsArray[i].z};
-        V = normalize(V);
-        let R = getR(L,N);
-        R = normalize(R);
-        luz = vectorSum(scalarVector(A_color,ARef_constant),scalarVector(D_vector,PI(N,L) + (Spec_constant*Math.pow(PI(R,V),Rugo_constant))));
-        pointsArray[i].lx = luz.x;
-        pointsArray[i].ly = luz.y;
-        pointsArray[i].lz = luz.z;
-    }
-
+function getReflectionVector(normalVector,lightVector){
+    let aux = scalarVector(normalVector,(2 * (cosinTwoVectors(normalVector,lightVector))));
+    return {x:aux.x-lightVector.x,y:aux.y-lightVector.y,z:aux.z-lightVector.z};
 }
 
 function flatToScreenPoint() {
     for (let i = 0; i < pointsArray.length; i++) {
-        pointsArray[i].Ys = ((pointsArray[i].y * distance_cameraPlane) / (pointsArray[i].z * halfHeight));
-        pointsArray[i].Xs = ((pointsArray[i].x * distance_cameraPlane) / (pointsArray[i].z * halfWidth));
+        pointsArray[i].Ys = ((pointsArray[i].y * distance_cameraPlane) / (pointsArray[i].z));
+        pointsArray[i].Xs = ((pointsArray[i].x * distance_cameraPlane) / (pointsArray[i].z));
     }
 }
 
-function determinatePixels() {
+function screenToPixels() {
     for (let i = 0; i < pointsArray.length; i++) {
-        pointsArray[i].Px = Math.floor(horizontalCanvas * ((1 + pointsArray[i].Xs))/2);
-        pointsArray[i].Py = Math.floor(verticalCanvas * ((1 - pointsArray[i].Ys))/2);
+        pointsArray[i].Px = Math.floor(horizontalCanvas * ((1 + (pointsArray[i].Xs / halfWidth)))/2);
+        pointsArray[i].Py = Math.floor(verticalCanvas * ((1 - (pointsArray[i].Ys / halfHeight)))/2);
     }
 }
 
-function getLineGrowth(x,y){//recebe um vetor
-    let a = v.x;
-    let b = v.y;
-    return (b/a);//isso vai retornar o a, mas para usar o 1/a, basta invereter
+function pixelsToscreen(pX,pY) {
+    return {xS:(((((pX + 0.5) / horizontalCanvas) * 2) -1) * halfWidth), yS:(((((pY + 0.5) / verticalCanvas) * 2) -1) * halfHeight)};
+}
+
+function getLineGrowth(firstPoint,secondPoint){
+    return ((firstPoint.Ys - secondPoint.Ys) / (firstPoint.Xs - secondPoint.Xs));//isso vai retornar o a, mas para usar o 1/a, basta inverter
+}
+
+function calculateBaricentricFactors(firstX, firstY, secondX, secondY, thirdX, thirdY, aimX, aimY) {
+    let matrixBaricentric = [[1,1,1,1],[firstX,secondX,thirdX,aimX],[firstY,secondY,thirdY,aimY]];
+    let aux = matrixBaricentric[1][0]/matrixBaricentric[0][0];
+    matrixBaricentric[1][0] = matrixBaricentric[1][0] - (matrixBaricentric[0][0] * aux);
+    matrixBaricentric[1][1] = matrixBaricentric[1][1] - (matrixBaricentric[0][1] * aux);
+    matrixBaricentric[1][2] = matrixBaricentric[1][2] - (matrixBaricentric[0][2] * aux);
+    matrixBaricentric[1][3] = matrixBaricentric[1][3] - (matrixBaricentric[0][3] * aux);
+    aux = matrixBaricentric[2][0]/matrixBaricentric[0][0];
+    matrixBaricentric[2][0] = matrixBaricentric[2][0] - (matrixBaricentric[0][0] * aux);
+    matrixBaricentric[2][1] = matrixBaricentric[2][1] - (matrixBaricentric[0][1] * aux);
+    matrixBaricentric[2][2] = matrixBaricentric[2][2] - (matrixBaricentric[0][2] * aux);
+    matrixBaricentric[2][3] = matrixBaricentric[2][3] - (matrixBaricentric[0][3] * aux);
+    aux = matrixBaricentric[1][1];
+    matrixBaricentric[1][1] = matrixBaricentric[1][1] / aux;
+    matrixBaricentric[1][2] = matrixBaricentric[1][2] / aux;
+    matrixBaricentric[1][3] = matrixBaricentric[1][3] / aux;
+    aux = matrixBaricentric[0][1]/matrixBaricentric[1][1];
+    matrixBaricentric[0][1] = matrixBaricentric[0][1] - (matrixBaricentric[1][1] * aux);
+    matrixBaricentric[0][2] = matrixBaricentric[0][2] - (matrixBaricentric[1][2] * aux);
+    matrixBaricentric[0][3] = matrixBaricentric[0][3] - (matrixBaricentric[1][3] * aux);
+    aux = matrixBaricentric[2][1]/matrixBaricentric[1][1];
+    matrixBaricentric[2][1] = matrixBaricentric[2][1] - (matrixBaricentric[1][1] * aux);
+    matrixBaricentric[2][2] = matrixBaricentric[2][2] - (matrixBaricentric[1][2] * aux);
+    matrixBaricentric[2][3] = matrixBaricentric[2][3] - (matrixBaricentric[1][3] * aux);
+    aux = matrixBaricentric[2][2];
+    matrixBaricentric[2][2] = matrixBaricentric[2][2] / aux;
+    matrixBaricentric[2][3] = matrixBaricentric[2][3] / aux;
+    aux = matrixBaricentric[0][2]/matrixBaricentric[2][2];
+    matrixBaricentric[0][2] = matrixBaricentric[0][2] - (matrixBaricentric[2][2] * aux);
+    matrixBaricentric[0][3] = matrixBaricentric[0][3] - (matrixBaricentric[2][3] * aux);
+    aux = matrixBaricentric[1][2]/matrixBaricentric[2][2];
+    matrixBaricentric[1][2] = matrixBaricentric[1][2] - (matrixBaricentric[2][2] * aux);
+    matrixBaricentric[1][3] = matrixBaricentric[1][3] - (matrixBaricentric[2][3] * aux);
+    return {alpha: matrixBaricentric[0][3], beta: matrixBaricentric[1][3], gama: matrixBaricentric[2][3]};
+}
+
+function calculateBaricentricSum(first,second,third,factors) {
+    return {x : (first.x * factors.alpha) + (second.x * factors.beta) + (third.x * factors.gama),
+        y : (first.y * factors.alpha) + (second.y * factors.beta) + (third.y * factors.gama),
+        z : (first.z * factors.alpha) + (second.z * factors.beta) + (third.z * factors.gama)};
+}
+
+function calculateBaricentricNormal(first,second,third,factors) {
+    let returner = {x : (first.Nx * factors.alpha) + (second.Nx * factors.beta) + (third.Nx * factors.gama),
+        y : (first.Ny * factors.alpha) + (second.Ny * factors.beta) + (third.Ny * factors.gama),
+        z : (first.Nz * factors.alpha) + (second.Nz * factors.beta) + (third.Nz * factors.gama)};
+    return normalize(returner);
+}
+
+function calculateLightVector(point,lightPosition) {
+    let returner = {x:lightPosition.x - point.x,y:lightPosition.y - point.y,z:lightPosition.z - point.z};
+    return normalize(returner);
+}
+
+function calculateVisionVector(point) {
+    let returner = scalarVector(point,-1);
+    return normalize(returner);
+}
+
+function scanLine(triangle) {
+    let pointsAux = [];
+    pointsAux.push(pointsArray[triangle.first]);
+    pointsAux.push(pointsArray[triangle.second]);
+    pointsAux.push(pointsArray[triangle.third]);
+    pointsAux.sort(function(a,b) {return a.Py - b.Py});
+    let xMin = 0;
+    let xMax = 0;
+    let yMax = pointsAux[2].Py;
+    let firstLineGrowth = 0;
+    let secondLineGrowth = 0;
+    let thirdLineGrowth = 0;
+    let pointScreen = undefined;
+    let bariSum = undefined;
+    let pointToBe = {x:0,y:0,z:0};
+    let vector_N = {x:0,y:0,z:0};
+    let vector_L = {x:0,y:0,z:0};
+    let vector_R = {x:0,y:0,z:0};
+    let vector_V = {x:0,y:0,z:0};
+    let rgb_COLOR = {r:0,g:0,b:0};
+    let thirdLiner = 'FALSE';
+    if (pointsAux[0].Py == pointsAux[1].Py) {
+        if (pointsAux[0].Px > pointsAux[1].Px) {
+            let aux = pointsAux[0];
+            pointsAux[0] = pointsAux[1];
+            pointsAux[1] = aux;
+        }
+        xMin = pointsAux[0].Px;
+        xMax = pointsAux[1].Px;
+
+        firstLineGrowth = (1 / getLineGrowth(pointsAux[0],pointsAux[2]));
+        secondLineGrowth = (1 / getLineGrowth(pointsAux[1],pointsAux[2]));
+
+        for (let yScan = pointsAux[0].Py; yScan <= yMax; yScan++) {
+            for (let actual = Math.floor(xMin); actual <= Math.floor(xMax); actual++){
+                pointScreen = pixelsToscreen(actual,yScan);
+                bariSum = calculateBaricentricFactors(pointsAux[0].Xs,pointsAux[0].Ys,pointsAux[1].Xs,pointsAux[1].Ys,pointsAux[2].Xs,pointsAux[2].Ys,pointScreen.xS,pointScreen.yS);
+                pointToBe = calculateBaricentricSum(pointsAux[0],pointsAux[1],pointsAux[2],bariSum);
+                if (pointToBe.z < rgbMatrix[actual][yScan].z) {
+                    rgbMatrix[actual][yScan].z = pointToBe.z;
+                    vector_N = calculateBaricentricNormal(pointsAux[0],pointsAux[1],pointsAux[2],bariSum);
+                    vector_L = calculateLightVector(pointToBe,L_point);
+                    vector_R = getReflectionVector(vector_N,vector_L);
+                    vector_R = normalize(vector_R);
+                    vector_V = calculateVisionVector(pointToBe);
+                    if (cosinTwoVectors(vector_N,vector_V) < 0) {
+                        vector_N = scalarVector(vector_N,-1);
+                    }
+                    if (cosinTwoVectors(vector_N,vector_L) < 0) {
+                        rgb_COLOR.r = ARef_constant * A_color.r;
+                        rgb_COLOR.g = ARef_constant * A_color.g;
+                        rgb_COLOR.b = ARef_constant * A_color.b;
+                    } else {
+                        let difuPart = Difu_constant * cosinTwoVectors(vector_N,vector_L);
+                        if (cosinTwoVectors(vector_V,vector_R) < 0) {
+                            rgb_COLOR.r = (ARef_constant * A_color.r) + (L_color.r * D_vector.r * difuPart);
+                            rgb_COLOR.g = (ARef_constant * A_color.g) + (L_color.g * D_vector.g * difuPart);
+                            rgb_COLOR.b = (ARef_constant * A_color.b) + (L_color.b * D_vector.b * difuPart);
+                        } else {
+                            let specPart = (Spec_constant * Math.pow(cosinTwoVectors(vector_R,vector_V),Rugo_constant));
+                            rgb_COLOR.r = (ARef_constant * A_color.r) + (L_color.r * ((D_vector.r * difuPart) + specPart));
+                            rgb_COLOR.g = (ARef_constant * A_color.g) + (L_color.g * ((D_vector.g * difuPart) + specPart));
+                            rgb_COLOR.b = (ARef_constant * A_color.b) + (L_color.b * ((D_vector.b * difuPart) + specPart));
+                        }
+                    }
+                    if (rgb_COLOR.r > 255) {
+                        rgb_COLOR.r = 255;
+                    }
+                    if (rgb_COLOR.g > 255) {
+                        rgb_COLOR.g = 255;
+                    }
+                    if (rgb_COLOR.b > 255) {
+                        rgb_COLOR.b = 255;
+                    }
+                    rgbMatrix[actual][yScan].r = rgb_COLOR.r;
+                    rgbMatrix[actual][yScan].g = rgb_COLOR.g;
+                    rgbMatrix[actual][yScan].b = rgb_COLOR.b;
+                }
+            }
+            xMin += firstLineGrowth;
+            xMax += secondLineGrowth;
+        }
+    } else {
+        xMin = pointsAux[0].Px;
+        xMax = pointsAux[0].Px;
+        if (pointsAux[1].Px > pointsAux[2].Px) {
+            firstLineGrowth = (1 / getLineGrowth(pointsAux[0],pointsAux[2]));
+            secondLineGrowth = (1 / getLineGrowth(pointsAux[0],pointsAux[1]));
+            thirdLineGrowth = (1 / getLineGrowth(pointsAux[2],pointsAux[1]));
+
+            for (let yScan = pointsAux[0].Py; yScan <= yMax; yScan++) {
+                for (let actual = Math.floor(xMin); actual <= Math.floor(xMax); actual++){
+                    pointScreen = pixelsToscreen(actual,yScan);
+                    bariSum = calculateBaricentricFactors(pointsAux[0].Xs,pointsAux[0].Ys,pointsAux[2].Xs,pointsAux[2].Ys,pointsAux[1].Xs,pointsAux[1].Ys,pointScreen.xS,pointScreen.yS);
+                    pointToBe = calculateBaricentricSum(pointsAux[0],pointsAux[2],pointsAux[1],bariSum);
+                    if (pointToBe.z < rgbMatrix[actual][yScan].z) {
+                        rgbMatrix[actual][yScan].z = pointToBe.z;
+                        vector_N = calculateBaricentricNormal(pointsAux[0],pointsAux[2],pointsAux[1],bariSum);
+                        vector_L = calculateLightVector(pointToBe,L_point);
+                        vector_R = getReflectionVector(vector_N,vector_L);
+                        vector_R = normalize(vector_R);
+                        vector_V = calculateVisionVector(pointToBe);
+                        if (cosinTwoVectors(vector_N,vector_V) < 0) {
+                            vector_N = scalarVector(vector_N,-1);
+                        }
+                        if (cosinTwoVectors(vector_N,vector_L) < 0) {
+                            rgb_COLOR.r = ARef_constant * A_color.r;
+                            rgb_COLOR.g = ARef_constant * A_color.g;
+                            rgb_COLOR.b = ARef_constant * A_color.b;
+                        } else {
+                            let difuPart = Difu_constant * cosinTwoVectors(vector_N,vector_L);
+                            if (cosinTwoVectors(vector_V,vector_R) < 0) {
+                                rgb_COLOR.r = (ARef_constant * A_color.r) + (L_color.r * D_vector.r * difuPart);
+                                rgb_COLOR.g = (ARef_constant * A_color.g) + (L_color.g * D_vector.g * difuPart);
+                                rgb_COLOR.b = (ARef_constant * A_color.b) + (L_color.b * D_vector.b * difuPart);
+                            } else {
+                                let specPart = (Spec_constant * Math.pow(cosinTwoVectors(vector_R,vector_V),Rugo_constant));
+                                rgb_COLOR.r = (ARef_constant * A_color.r) + (L_color.r * ((D_vector.r * difuPart) + specPart));
+                                rgb_COLOR.g = (ARef_constant * A_color.g) + (L_color.g * ((D_vector.g * difuPart) + specPart));
+                                rgb_COLOR.b = (ARef_constant * A_color.b) + (L_color.b * ((D_vector.b * difuPart) + specPart));
+                            }
+                        }
+                        if (rgb_COLOR.r > 255) {
+                            rgb_COLOR.r = 255;
+                        }
+                        if (rgb_COLOR.g > 255) {
+                            rgb_COLOR.g = 255;
+                        }
+                        if (rgb_COLOR.b > 255) {
+                            rgb_COLOR.b = 255;
+                        }
+                        rgbMatrix[actual][yScan].r = rgb_COLOR.r;
+                        rgbMatrix[actual][yScan].g = rgb_COLOR.g;
+                        rgbMatrix[actual][yScan].b = rgb_COLOR.b;
+                    }
+                }
+                if (yScan == pointsAux[1].Py && thirdLiner == 'FALSE') {
+                    if (xMin==pointsAux[2].Px) {
+                        thirdLiner = 'LEFT';
+                    } else if (xMax == pointsAux[1].Px) {
+                        thirdLiner = 'RIGHT';
+                    }
+                }
+                if (thirdLiner == 'FALSE') {
+                    xMin += firstLineGrowth;
+                    xMax += secondLineGrowth;
+                } else if (thirdLiner == 'LEFT') {
+                    xMin += thirdLineGrowth;
+                    xMax += secondLineGrowth;
+                } else if (thirdLiner == 'RIGHT') {
+                    xMin += firstLineGrowth;
+                    xMax += thirdLineGrowth;
+                }
+            }
+        } else {
+            firstLineGrowth = (1 / getLineGrowth(pointsAux[0],pointsAux[1]));
+            secondLineGrowth = (1 / getLineGrowth(pointsAux[0],pointsAux[2]));
+            thirdLineGrowth = (1 / getLineGrowth(pointsAux[1],pointsAux[2]));
+
+            for (let yScan = pointsAux[0].Py; yScan <= yMax; yScan++) {
+                for (let actual = Math.floor(xMin); actual <= Math.floor(xMax); actual++){
+                    pointScreen = pixelsToscreen(actual,yScan);
+                    bariSum = calculateBaricentricFactors(pointsAux[0].Xs,pointsAux[0].Ys,pointsAux[1].Xs,pointsAux[1].Ys,pointsAux[2].Xs,pointsAux[2].Ys,pointScreen.xS,pointScreen.yS);
+                    pointToBe = calculateBaricentricSum(pointsAux[0],pointsAux[1],pointsAux[2],bariSum);
+                    if (pointToBe.z < rgbMatrix[actual][yScan].z) {
+                        rgbMatrix[actual][yScan].z = pointToBe.z;
+                        vector_N = calculateBaricentricNormal(pointsAux[0],pointsAux[1],pointsAux[2],bariSum);
+                        vector_L = calculateLightVector(pointToBe,L_point);
+                        vector_R = getReflectionVector(vector_N,vector_L);
+                        vector_R = normalize(vector_R);
+                        vector_V = calculateVisionVector(pointToBe);
+                        if (cosinTwoVectors(vector_N,vector_V) < 0) {
+                            vector_N = scalarVector(vector_N,-1);
+                        }
+                        if (cosinTwoVectors(vector_N,vector_L) < 0) {
+                            rgb_COLOR.r = ARef_constant * A_color.r;
+                            rgb_COLOR.g = ARef_constant * A_color.g;
+                            rgb_COLOR.b = ARef_constant * A_color.b;
+                        } else {
+                            let difuPart = Difu_constant * cosinTwoVectors(vector_N,vector_L);
+                            if (cosinTwoVectors(vector_V,vector_R) < 0) {
+                                rgb_COLOR.r = (ARef_constant * A_color.r) + (L_color.r * D_vector.r * difuPart);
+                                rgb_COLOR.g = (ARef_constant * A_color.g) + (L_color.g * D_vector.g * difuPart);
+                                rgb_COLOR.b = (ARef_constant * A_color.b) + (L_color.b * D_vector.b * difuPart);
+                            } else {
+                                let specPart = (Spec_constant * Math.pow(cosinTwoVectors(vector_R,vector_V),Rugo_constant));
+                                rgb_COLOR.r = (ARef_constant * A_color.r) + (L_color.r * ((D_vector.r * difuPart) + specPart));
+                                rgb_COLOR.g = (ARef_constant * A_color.g) + (L_color.g * ((D_vector.g * difuPart) + specPart));
+                                rgb_COLOR.b = (ARef_constant * A_color.b) + (L_color.b * ((D_vector.b * difuPart) + specPart));
+                            }
+                        }
+                        if (rgb_COLOR.r > 255) {
+                            rgb_COLOR.r = 255;
+                        }
+                        if (rgb_COLOR.g > 255) {
+                            rgb_COLOR.g = 255;
+                        }
+                        if (rgb_COLOR.b > 255) {
+                            rgb_COLOR.b = 255;
+                        }
+                        rgbMatrix[actual][yScan].r = rgb_COLOR.r;
+                        rgbMatrix[actual][yScan].g = rgb_COLOR.g;
+                        rgbMatrix[actual][yScan].b = rgb_COLOR.b;
+                    }
+                }
+                if (yScan == pointsAux[1].Py && thirdLiner == 'FALSE') {
+                    if (xMin==pointsAux[1].Px) {
+                        thirdLiner = 'LEFT';
+                    } else if (xMax == pointsAux[2].Px) {
+                        thirdLiner = 'RIGHT';
+                    }
+                }
+                if (thirdLiner == 'FALSE') {
+                    xMin += firstLineGrowth;
+                    xMax += secondLineGrowth;
+                } else if (thirdLiner == 'LEFT') {
+                    xMin += thirdLineGrowth;
+                    xMax += secondLineGrowth;
+                } else if (thirdLiner == 'RIGHT') {
+                    xMin += firstLineGrowth;
+                    xMax += thirdLineGrowth;
+                }
+            }
+        }
+    }
+
 }
 
 function drawTriangles() {//algoritmo do pintor
     ctx.clearRect(0,0,canvas.width,canvas.height);
-    trianglesArray.sort(function(a, b){return a.distance - b.distance});
-    for (let i = trianglesArray.length - 1; i > -1; i--) {
-        ctx.beginPath();
-        ctx.moveTo(pointsArray[trianglesArray[i].first].Px,pointsArray[trianglesArray[i].first].Py);
-        ctx.lineTo(pointsArray[trianglesArray[i].second].Px,pointsArray[trianglesArray[i].second].Py);
-        ctx.lineTo(pointsArray[trianglesArray[i].third].Px,pointsArray[trianglesArray[i].third].Py);
-        ctx.lineTo(pointsArray[trianglesArray[i].first].Px,pointsArray[trianglesArray[i].first].Py);
-        ctx.lineWidth = 1;
-        ctx.strokeStyle = '#ff6b00';
-        ctx.fillStyle = '#000000';
-        ctx.fill();
-        ctx.stroke();
-        ctx.closePath();
+    for (let i = 0; i < horizontalCanvas; i++) {
+        for (let j = 0; j < verticalCanvas; j++) {
+            ctx.fillStyle = "rgba("+rgbMatrix[i][j].r+","+rgbMatrix[i][j].g+","+rgbMatrix[i][j].b+","+255+")";
+            ctx.fillRect( i, j, 1, 1 );
+        }
     }
 }
 
@@ -253,17 +518,15 @@ btn_visual_obj.onclick = function clickObj(){btn_obj.click();};
 btn_visual_cam.onclick = function clickCam(){btn_cam.click();};
 btn_visual_lig.onclick = function clickCam(){btn_lig.click();};
 btn_start.onclick = function doTheThing() {
-    //luz
-    light = light.split(/[\r\n\s]+/).filter(function(el) {return ((el.length >0))});
-    L_point = {x:parseFloat(light[0]),y:parseFloat(light[1]),z:parseFloat(light[2])};//posicao da luz
-    ARef_constant = parseFloat(light[3]);//ka
-    A_color = {x:parseFloat(light[4]),y:parseFloat(light[5]),z:parseFloat(light[6])};//IA
-    Difu_constant = parseFloat(light[7]);//Kd
-    D_vector = {x:parseFloat(light[8]),y:parseFloat(light[9]),z:parseFloat(light[10])};//Ip
-    Spec_constant = parseFloat(light[11]);//ks
-    L_color = {x:parseFloat(light[12]),y:parseFloat(light[13]),z:parseFloat(light[14])};//IL
-    Rugo_constant = parseFloat(light[15]);//n
-    //luz
+    light = light.split(/[\r\n\s]+/).filter(function(el) {return (el.length > 0)});
+    L_point = {x:parseFloat(light[0]),y:parseFloat(light[1]),z:parseFloat(light[2])};
+    ARef_constant = parseFloat(light[3]);
+    A_color = {r:parseFloat(light[4]),g:parseFloat(light[5]),b:parseFloat(light[6])};
+    Difu_constant = parseFloat(light[7]);
+    D_vector = {r:parseFloat(light[8]),g:parseFloat(light[9]),b:parseFloat(light[10])};
+    Spec_constant = parseFloat(light[11]);
+    L_color = {r:parseFloat(light[12]),g:parseFloat(light[13]),b:parseFloat(light[14])};
+    Rugo_constant = parseFloat(light[15]);
     camera = camera.split(/[\r\n\s]+/).filter(function(el) {return ((el.length >0))});
     C_point = {x:parseFloat(camera[0]),y:parseFloat(camera[1]),z:parseFloat(camera[2])};
     N_vector = {x:parseFloat(camera[3]),y:parseFloat(camera[4]),z:parseFloat(camera[5])};
@@ -273,6 +536,10 @@ btn_start.onclick = function doTheThing() {
     halfHeight = parseFloat(camera[11]);
     horizontalCanvas = Math.ceil((verticalCanvas/(halfHeight*2))*(halfWidth*2));
     resizeCanvas(horizontalCanvas,verticalCanvas);
+    basicRGB.r = A_color.r;
+    basicRGB.g = A_color.g;
+    basicRGB.b = A_color.b;
+    rgbMatrix = [...Array(horizontalCanvas)].map(i => Array(verticalCanvas).fill(basicRGB));
     V_vector = orthogonalizeVector(V_vector,N_vector);
     U_vector = crossProductVector(N_vector,V_vector);
     N_vector = normalize(N_vector);
@@ -287,7 +554,7 @@ btn_start.onclick = function doTheThing() {
     let initTriangles = 2 + (points*3);
     let end = initTriangles + (triangles * 3);
     for (let i = initPoints; i < initTriangles; i+=3) {
-        pointsArray.push({x:parseFloat(object[i]),y:parseFloat(object[i+1]),z:parseFloat(object[i+2]),Nx:0,Ny:0,Nz:0,Xs:0,Ys:0,Px:0,Py:0,lx:0,ly:0,lz:0});
+        pointsArray.push({x:parseFloat(object[i]),y:parseFloat(object[i+1]),z:parseFloat(object[i+2]),Nx:0,Ny:0,Nz:0,Xs:0,Ys:0,Px:0,Py:0});
     }
     for (let i = initTriangles; i < end; i+=3) {
         trianglesArray.push({first:(parseFloat(object[i])-1),second:(parseFloat(object[i+1]))-1,third:(parseFloat(object[i+2])-1),distance:0,Nx:0,Ny:0,Nz:0});
@@ -295,10 +562,14 @@ btn_start.onclick = function doTheThing() {
     toCameraCoordinates();
     calculateTrianglesNormal();
     normalizePointNormals();
-    allLight();
     distanceTriangleOrigin();
     flatToScreenPoint();
-    determinatePixels();
+    screenToPixels();
+    trianglesArray.sort(function(a, b){return a.distance - b.distance});
+    for (let i = 0; i < trianglesArray.length; i++) {
+        scanLine(trianglesArray[i]);
+    }
+    ctx.fillText("got here", 10, 10);
     drawTriangles();
 };
 
@@ -320,9 +591,11 @@ let Rugo_constant = 0;
 let Spec_constant = 0;
 let Difu_constant = 0;
 let ARef_constant = 0;
+let basicRGB = {r:0,g:0,b:0,z:Infinity};
 
 let pointsArray = [];
 let trianglesArray = [];
+let rgbMatrix = undefined;
 let verticalCanvas = 640;
 let horizontalCanvas = Math.floor((verticalCanvas/(halfHeight*2))*(halfWidth*2));
 resizeCanvas(horizontalCanvas,verticalCanvas);
