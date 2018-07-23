@@ -201,39 +201,76 @@ function getLineGrowth(firstPoint,secondPoint){
 }
 
 function calculateBaricentricFactors(firstX, firstY, secondX, secondY, thirdX, thirdY, aimX, aimY) {
-    let matrixBaricentric = [[1,1,1,1],[firstX,secondX,thirdX,aimX],[firstY,secondY,thirdY,aimY]];
-    let aux = matrixBaricentric[1][0]/matrixBaricentric[0][0];
-    matrixBaricentric[1][0] = matrixBaricentric[1][0] - (matrixBaricentric[0][0] * aux);
-    matrixBaricentric[1][1] = matrixBaricentric[1][1] - (matrixBaricentric[0][1] * aux);
-    matrixBaricentric[1][2] = matrixBaricentric[1][2] - (matrixBaricentric[0][2] * aux);
-    matrixBaricentric[1][3] = matrixBaricentric[1][3] - (matrixBaricentric[0][3] * aux);
-    aux = matrixBaricentric[2][0]/matrixBaricentric[0][0];
-    matrixBaricentric[2][0] = matrixBaricentric[2][0] - (matrixBaricentric[0][0] * aux);
-    matrixBaricentric[2][1] = matrixBaricentric[2][1] - (matrixBaricentric[0][1] * aux);
-    matrixBaricentric[2][2] = matrixBaricentric[2][2] - (matrixBaricentric[0][2] * aux);
-    matrixBaricentric[2][3] = matrixBaricentric[2][3] - (matrixBaricentric[0][3] * aux);
-    aux = matrixBaricentric[1][1];
-    matrixBaricentric[1][1] = matrixBaricentric[1][1] / aux;
-    matrixBaricentric[1][2] = matrixBaricentric[1][2] / aux;
-    matrixBaricentric[1][3] = matrixBaricentric[1][3] / aux;
-    aux = matrixBaricentric[0][1]/matrixBaricentric[1][1];
-    matrixBaricentric[0][1] = matrixBaricentric[0][1] - (matrixBaricentric[1][1] * aux);
-    matrixBaricentric[0][2] = matrixBaricentric[0][2] - (matrixBaricentric[1][2] * aux);
-    matrixBaricentric[0][3] = matrixBaricentric[0][3] - (matrixBaricentric[1][3] * aux);
-    aux = matrixBaricentric[2][1]/matrixBaricentric[1][1];
-    matrixBaricentric[2][1] = matrixBaricentric[2][1] - (matrixBaricentric[1][1] * aux);
-    matrixBaricentric[2][2] = matrixBaricentric[2][2] - (matrixBaricentric[1][2] * aux);
-    matrixBaricentric[2][3] = matrixBaricentric[2][3] - (matrixBaricentric[1][3] * aux);
-    aux = matrixBaricentric[2][2];
-    matrixBaricentric[2][2] = matrixBaricentric[2][2] / aux;
-    matrixBaricentric[2][3] = matrixBaricentric[2][3] / aux;
-    aux = matrixBaricentric[0][2]/matrixBaricentric[2][2];
-    matrixBaricentric[0][2] = matrixBaricentric[0][2] - (matrixBaricentric[2][2] * aux);
-    matrixBaricentric[0][3] = matrixBaricentric[0][3] - (matrixBaricentric[2][3] * aux);
-    aux = matrixBaricentric[1][2]/matrixBaricentric[2][2];
-    matrixBaricentric[1][2] = matrixBaricentric[1][2] - (matrixBaricentric[2][2] * aux);
-    matrixBaricentric[1][3] = matrixBaricentric[1][3] - (matrixBaricentric[2][3] * aux);
-    return {alpha: matrixBaricentric[0][3], beta: matrixBaricentric[1][3], gama: matrixBaricentric[2][3]};
+    let B = [[1,1,1,1],[firstX,secondX,thirdX,aimX],[firstY,secondY,thirdY,aimY]];
+    let factor1 = 0;
+    let factor2 = 0;
+    let RowFinal = 2;
+    let ColFinal = 4;
+    for (let i = 0; i < RowFinal; i++) {
+        if (B[i][i] == 0 && i < (RowFinal -1)) {
+            let aux = -1;
+            for (let j = i; j<RowFinal; j++) {
+                if (B[j][i] != 0) {
+                    aux = j;
+                    j=RowFinal;
+                }
+            }
+            if (aux = -1) {
+                i++;
+            } else {
+                let auxiliar = B[aux];
+                B[aux] = B[i];
+                B[i] = auxiliar;
+            }
+        }
+        factor1 = 1 / B[i][i];
+        for (let j = 0; j <RowFinal; j++) {
+            factor2 = B[j][i] * factor1;
+            if (i != j) {
+                for (let k = i; k <ColFinal; k++) {
+                    B[j][k] = B[j][k] - (B[i][k] * factor2);
+                }
+            }
+        }
+        for (let k = i; k <4; k++) {
+            B[i][k] = B[i][k] * factor1;
+        }
+    }
+    ctx.fillText(B[0][0] + ' ' + B[0][1] + ' ' + B[0][2] + ' ' + B[0][3], 10, 10);
+    ctx.fillText(B[1][0] + ' ' + B[1][1] + ' ' + B[1][2] + ' ' + B[1][3], 10, 30);
+    ctx.fillText(B[2][0] + ' ' + B[2][1] + ' ' + B[2][2] + ' ' + B[2][3], 10, 50);
+    /*let aux = B[1][0]/B[0][0];
+    B[1][0] = B[1][0] - (B[0][0] * aux);
+    B[1][1] = B[1][1] - (B[0][1] * aux);
+    B[1][2] = B[1][2] - (B[0][2] * aux);
+    B[1][3] = B[1][3] - (B[0][3] * aux);
+    aux = B[2][0]/B[0][0];
+    B[2][0] = B[2][0] - (B[0][0] * aux);
+    B[2][1] = B[2][1] - (B[0][1] * aux);
+    B[2][2] = B[2][2] - (B[0][2] * aux);
+    B[2][3] = B[2][3] - (B[0][3] * aux);
+    aux = 1 / B[1][1];
+    B[1][1] = B[1][1] * aux;
+    B[1][2] = B[1][2] * aux;
+    B[1][3] = B[1][3] * aux;
+    aux = B[0][1]/B[1][1];
+    B[0][1] = B[0][1] - (B[1][1] * aux);
+    B[0][2] = B[0][2] - (B[1][2] * aux);
+    B[0][3] = B[0][3] - (B[1][3] * aux);
+    aux = B[2][1]/B[1][1];
+    B[2][1] = B[2][1] - (B[1][1] * aux);
+    B[2][2] = B[2][2] - (B[1][2] * aux);
+    B[2][3] = B[2][3] - (B[1][3] * aux);
+    aux = 1 / B[2][2];
+    B[2][2] = B[2][2] * aux;
+    B[2][3] = B[2][3] * aux;
+    aux = B[0][2]/B[2][2];
+    B[0][2] = B[0][2] - (B[2][2] * aux);
+    B[0][3] = B[0][3] - (B[2][3] * aux);
+    aux = B[1][2]/B[2][2];
+    B[1][2] = B[1][2] - (B[2][2] * aux);
+    B[1][3] = B[1][3] - (B[2][3] * aux);*/
+    return {alpha: B[0][3], beta: B[1][3], gama: B[2][3]};
 }
 
 function calculateBaricentricSum(first,second,third,factors) {
@@ -484,14 +521,13 @@ function scanLine(triangle) {
             }
         }
     }
-
 }
 
 function drawTriangles() {//algoritmo do pintor
     ctx.clearRect(0,0,canvas.width,canvas.height);
     for (let i = 0; i < horizontalCanvas; i++) {
         for (let j = 0; j < verticalCanvas; j++) {
-            ctx.fillStyle = "rgba("+rgbMatrix[i][j].r+","+rgbMatrix[i][j].g+","+rgbMatrix[i][j].b+","+255+")";
+            ctx.fillStyle = "rgb(" + rgbMatrix[i][j].r + "," + rgbMatrix[i][j].g + ","+ rgbMatrix[i][j].b + ")";
             ctx.fillRect( i, j, 1, 1 );
         }
     }
@@ -518,7 +554,9 @@ btn_visual_obj.onclick = function clickObj(){btn_obj.click();};
 btn_visual_cam.onclick = function clickCam(){btn_cam.click();};
 btn_visual_lig.onclick = function clickCam(){btn_lig.click();};
 btn_start.onclick = function doTheThing() {
-    light = light.split(/[\r\n\s]+/).filter(function(el) {return (el.length > 0)});
+    let tester =  calculateBaricentricFactors(0,12,0,9,2,4,1,7);
+    ctx.fillText(tester.alpha + ' ' + tester.beta + ' ' + tester.gama, 10, 100);
+    /*light = light.split(/[\r\n\s]+/).filter(function(el) {return (el.length > 0)});
     L_point = {x:parseFloat(light[0]),y:parseFloat(light[1]),z:parseFloat(light[2])};
     ARef_constant = parseFloat(light[3]);
     A_color = {r:parseFloat(light[4]),g:parseFloat(light[5]),b:parseFloat(light[6])};
@@ -570,7 +608,7 @@ btn_start.onclick = function doTheThing() {
         scanLine(trianglesArray[i]);
     }
     ctx.fillText("got here", 10, 10);
-    drawTriangles();
+    //drawTriangles();*/
 };
 
 let object = undefined;
