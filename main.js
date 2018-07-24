@@ -230,7 +230,23 @@ function calculateBaricentricFactors(firstX, firstY, secondX, secondY, thirdX, t
         barFactors.gama = getNorma(crossProductVector(first,second)) / areaTriangle;
     } else if (cosin == -1) {
         barFactors.alpha = 0;
-
+        let sizeLine = Math.sqrt(Math.pow((thirdX - secondX),2) + Math.pow((thirdY - secondY),2));
+        barFactors.beta = Math.sqrt(Math.pow((secondX - aimX),2) + Math.pow((secondY - aimY),2)) / sizeLine;
+        barFactors.gama = Math.sqrt(Math.pow((thirdX - aimX),2) + Math.pow((thirdY - aimY),2)) / sizeLine;
+    } else {
+        let norma1 = getNorma(first);
+        let norma2 = getNorma(second);
+        if (norma1 >= norma2) {
+            barFactors.beta = 0;
+            let sizeLine = Math.sqrt(Math.pow((thirdX - firstX),2) + Math.pow((thirdY - firstY),2));
+            barFactors.alpha = Math.sqrt(Math.pow((firstX - aimX),2) + Math.pow((firstY - aimY),2)) / sizeLine;
+            barFactors.gama = Math.sqrt(Math.pow((thirdX - aimX),2) + Math.pow((thirdY - aimY),2)) / sizeLine;
+        } else {
+            barFactors.gama = 0;
+            let sizeLine = Math.sqrt(Math.pow((secondX - firstX),2) + Math.pow((secondY - firstY),2));
+            barFactors.alpha = Math.sqrt(Math.pow((firstX - aimX),2) + Math.pow((firstY - aimY),2)) / sizeLine;
+            barFactors.beta = Math.sqrt(Math.pow((secondX - aimX),2) + Math.pow((secondY - aimY),2)) / sizeLine;
+        }
     }
     /*let B = [[1,1,1,1],[firstX,secondX,thirdX,aimX],[firstY,secondY,thirdY,aimY]];
     let factor1 = 0;
@@ -556,9 +572,9 @@ btn_visual_obj.onclick = function clickObj(){btn_obj.click();};
 btn_visual_cam.onclick = function clickCam(){btn_cam.click();};
 btn_visual_lig.onclick = function clickCam(){btn_lig.click();};
 btn_start.onclick = function doTheThing() {
-    let tester =  calculateBaricentricFactors(0,12,0,9,2,4,1,7);
-    ctx.fillText(tester.alpha + ' ' + tester.beta + ' ' + tester.gama, 10, 100);
-    /*light = light.split(/[\r\n\s]+/).filter(function(el) {return (el.length > 0)});
+    //let tester =  calculateBaricentricFactors(0,12,0,9,2,4,1,7);
+    //ctx.fillText(tester.alpha + ' ' + tester.beta + ' ' + tester.gama, 10, 100);
+    light = light.split(/[\r\n\s]+/).filter(function(el) {return (el.length > 0)});
     L_point = {x:parseFloat(light[0]),y:parseFloat(light[1]),z:parseFloat(light[2])};
     ARef_constant = parseFloat(light[3]);
     A_color = {r:parseFloat(light[4]),g:parseFloat(light[5]),b:parseFloat(light[6])};
@@ -610,7 +626,7 @@ btn_start.onclick = function doTheThing() {
         scanLine(trianglesArray[i]);
     }
     ctx.fillText("got here", 10, 10);
-    drawTriangles();*/
+    //drawTriangles();
 };
 
 let object = undefined;
