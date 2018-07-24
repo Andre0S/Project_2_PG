@@ -314,6 +314,40 @@ function calculateVisionVector(point) {
     return normalize(returner);
 }
 
+function calculateColor(vector_N,vector_L,vector_R,vector_V) {
+    let rgb_COLOR = {r:0,g:0,b:0};
+    if (cosinTwoVectors(vector_N,vector_V) < 0) {
+        vector_N = scalarVector(vector_N,-1);
+    }
+    if (cosinTwoVectors(vector_N,vector_L) < 0) {
+        rgb_COLOR.r = ARef_constant * A_color.r;
+        rgb_COLOR.g = ARef_constant * A_color.g;
+        rgb_COLOR.b = ARef_constant * A_color.b;
+    } else {
+        let difuPart = Difu_constant * cosinTwoVectors(vector_N,vector_L);
+        if (cosinTwoVectors(vector_V,vector_R) < 0) {
+            rgb_COLOR.r = (ARef_constant * A_color.r) + (L_color.r * D_vector.r * difuPart);
+            rgb_COLOR.g = (ARef_constant * A_color.g) + (L_color.g * D_vector.g * difuPart);
+            rgb_COLOR.b = (ARef_constant * A_color.b) + (L_color.b * D_vector.b * difuPart);
+        } else {
+            let specPart = (Spec_constant * Math.pow(cosinTwoVectors(vector_R,vector_V),Rugo_constant));
+            rgb_COLOR.r = (ARef_constant * A_color.r) + (L_color.r * ((D_vector.r * difuPart) + specPart));
+            rgb_COLOR.g = (ARef_constant * A_color.g) + (L_color.g * ((D_vector.g * difuPart) + specPart));
+            rgb_COLOR.b = (ARef_constant * A_color.b) + (L_color.b * ((D_vector.b * difuPart) + specPart));
+        }
+    }
+    if (rgb_COLOR.r > 255) {
+        rgb_COLOR.r = 255;
+    }
+    if (rgb_COLOR.g > 255) {
+        rgb_COLOR.g = 255;
+    }
+    if (rgb_COLOR.b > 255) {
+        rgb_COLOR.b = 255;
+    }
+    return rgb_COLOR;
+}
+
 function scanLine(triangle) {
     let pointsAux = [];
     pointsAux.push(pointsArray[triangle.first]);
@@ -349,48 +383,22 @@ function scanLine(triangle) {
 
         for (let yScan = pointsAux[0].Py; yScan <= yMax; yScan++) {
             for (let actual = Math.floor(xMin); actual <= Math.floor(xMax); actual++){
-                pointScreen = pixelsToscreen(actual,yScan);
-                bariSum = calculateBaricentricFactors(pointsAux[0].Xs,pointsAux[0].Ys,pointsAux[1].Xs,pointsAux[1].Ys,pointsAux[2].Xs,pointsAux[2].Ys,pointScreen.xS,pointScreen.yS);
-                pointToBe = calculateBaricentricSum(pointsAux[0],pointsAux[1],pointsAux[2],bariSum);
-                if (pointToBe.z < rgbMatrix[actual][yScan].z) {
-                    rgbMatrix[actual][yScan].z = pointToBe.z;
-                    vector_N = calculateBaricentricNormal(pointsAux[0],pointsAux[1],pointsAux[2],bariSum);
-                    vector_L = calculateLightVector(pointToBe,L_point);
-                    vector_R = getReflectionVector(vector_N,vector_L);
-                    vector_R = normalize(vector_R);
-                    vector_V = calculateVisionVector(pointToBe);
-                    if (cosinTwoVectors(vector_N,vector_V) < 0) {
-                        vector_N = scalarVector(vector_N,-1);
+                if (actual >= 0 && actual < horizontalCanvas && yScan >=0 && yScan < verticalCanvas) {
+                    pointScreen = pixelsToscreen(actual,yScan);
+                    bariSum = calculateBaricentricFactors(pointsAux[0].Xs,pointsAux[0].Ys,pointsAux[1].Xs,pointsAux[1].Ys,pointsAux[2].Xs,pointsAux[2].Ys,pointScreen.xS,pointScreen.yS);
+                    pointToBe = calculateBaricentricSum(pointsAux[0],pointsAux[1],pointsAux[2],bariSum);
+                    if (pointToBe.z < rgbMatrix[actual][yScan].z) {
+                        rgbMatrix[actual][yScan].z = pointToBe.z;
+                        vector_N = calculateBaricentricNormal(pointsAux[0],pointsAux[2],pointsAux[1],bariSum);
+                        vector_L = calculateLightVector(pointToBe,L_point);
+                        vector_R = getReflectionVector(vector_N,vector_L);
+                        vector_R = normalize(vector_R);
+                        vector_V = calculateVisionVector(pointToBe);
+                        rgb_COLOR = calculateColor(vector_N,vector_L,vector_R,vector_V);
+                        rgbMatrix[actual][yScan].r = rgb_COLOR.r;
+                        rgbMatrix[actual][yScan].g = rgb_COLOR.g;
+                        rgbMatrix[actual][yScan].b = rgb_COLOR.b;
                     }
-                    if (cosinTwoVectors(vector_N,vector_L) < 0) {
-                        rgb_COLOR.r = ARef_constant * A_color.r;
-                        rgb_COLOR.g = ARef_constant * A_color.g;
-                        rgb_COLOR.b = ARef_constant * A_color.b;
-                    } else {
-                        let difuPart = Difu_constant * cosinTwoVectors(vector_N,vector_L);
-                        if (cosinTwoVectors(vector_V,vector_R) < 0) {
-                            rgb_COLOR.r = (ARef_constant * A_color.r) + (L_color.r * D_vector.r * difuPart);
-                            rgb_COLOR.g = (ARef_constant * A_color.g) + (L_color.g * D_vector.g * difuPart);
-                            rgb_COLOR.b = (ARef_constant * A_color.b) + (L_color.b * D_vector.b * difuPart);
-                        } else {
-                            let specPart = (Spec_constant * Math.pow(cosinTwoVectors(vector_R,vector_V),Rugo_constant));
-                            rgb_COLOR.r = (ARef_constant * A_color.r) + (L_color.r * ((D_vector.r * difuPart) + specPart));
-                            rgb_COLOR.g = (ARef_constant * A_color.g) + (L_color.g * ((D_vector.g * difuPart) + specPart));
-                            rgb_COLOR.b = (ARef_constant * A_color.b) + (L_color.b * ((D_vector.b * difuPart) + specPart));
-                        }
-                    }
-                    if (rgb_COLOR.r > 255) {
-                        rgb_COLOR.r = 255;
-                    }
-                    if (rgb_COLOR.g > 255) {
-                        rgb_COLOR.g = 255;
-                    }
-                    if (rgb_COLOR.b > 255) {
-                        rgb_COLOR.b = 255;
-                    }
-                    rgbMatrix[actual][yScan].r = rgb_COLOR.r;
-                    rgbMatrix[actual][yScan].g = rgb_COLOR.g;
-                    rgbMatrix[actual][yScan].b = rgb_COLOR.b;
                 }
             }
             xMin += firstLineGrowth;
@@ -406,48 +414,22 @@ function scanLine(triangle) {
 
             for (let yScan = pointsAux[0].Py; yScan <= yMax; yScan++) {
                 for (let actual = Math.floor(xMin); actual <= Math.floor(xMax); actual++){
-                    pointScreen = pixelsToscreen(actual,yScan);
-                    bariSum = calculateBaricentricFactors(pointsAux[0].Xs,pointsAux[0].Ys,pointsAux[2].Xs,pointsAux[2].Ys,pointsAux[1].Xs,pointsAux[1].Ys,pointScreen.xS,pointScreen.yS);
-                    pointToBe = calculateBaricentricSum(pointsAux[0],pointsAux[2],pointsAux[1],bariSum);
-                    if (pointToBe.z < rgbMatrix[actual][yScan].z) {
-                        rgbMatrix[actual][yScan].z = pointToBe.z;
-                        vector_N = calculateBaricentricNormal(pointsAux[0],pointsAux[2],pointsAux[1],bariSum);
-                        vector_L = calculateLightVector(pointToBe,L_point);
-                        vector_R = getReflectionVector(vector_N,vector_L);
-                        vector_R = normalize(vector_R);
-                        vector_V = calculateVisionVector(pointToBe);
-                        if (cosinTwoVectors(vector_N,vector_V) < 0) {
-                            vector_N = scalarVector(vector_N,-1);
+                    if (actual >= 0 && actual < horizontalCanvas && yScan >=0 && yScan < verticalCanvas) {
+                        pointScreen = pixelsToscreen(actual,yScan);
+                        bariSum = calculateBaricentricFactors(pointsAux[0].Xs,pointsAux[0].Ys,pointsAux[2].Xs,pointsAux[2].Ys,pointsAux[1].Xs,pointsAux[1].Ys,pointScreen.xS,pointScreen.yS);
+                        pointToBe = calculateBaricentricSum(pointsAux[0],pointsAux[2],pointsAux[1],bariSum);
+                        if (pointToBe.z < rgbMatrix[actual][yScan].z) {
+                            rgbMatrix[actual][yScan].z = pointToBe.z;
+                            vector_N = calculateBaricentricNormal(pointsAux[0],pointsAux[2],pointsAux[1],bariSum);
+                            vector_L = calculateLightVector(pointToBe,L_point);
+                            vector_R = getReflectionVector(vector_N,vector_L);
+                            vector_R = normalize(vector_R);
+                            vector_V = calculateVisionVector(pointToBe);
+                            rgb_COLOR = calculateColor(vector_N,vector_L,vector_R,vector_V);
+                            rgbMatrix[actual][yScan].r = rgb_COLOR.r;
+                            rgbMatrix[actual][yScan].g = rgb_COLOR.g;
+                            rgbMatrix[actual][yScan].b = rgb_COLOR.b;
                         }
-                        if (cosinTwoVectors(vector_N,vector_L) < 0) {
-                            rgb_COLOR.r = ARef_constant * A_color.r;
-                            rgb_COLOR.g = ARef_constant * A_color.g;
-                            rgb_COLOR.b = ARef_constant * A_color.b;
-                        } else {
-                            let difuPart = Difu_constant * cosinTwoVectors(vector_N,vector_L);
-                            if (cosinTwoVectors(vector_V,vector_R) < 0) {
-                                rgb_COLOR.r = (ARef_constant * A_color.r) + (L_color.r * D_vector.r * difuPart);
-                                rgb_COLOR.g = (ARef_constant * A_color.g) + (L_color.g * D_vector.g * difuPart);
-                                rgb_COLOR.b = (ARef_constant * A_color.b) + (L_color.b * D_vector.b * difuPart);
-                            } else {
-                                let specPart = (Spec_constant * Math.pow(cosinTwoVectors(vector_R,vector_V),Rugo_constant));
-                                rgb_COLOR.r = (ARef_constant * A_color.r) + (L_color.r * ((D_vector.r * difuPart) + specPart));
-                                rgb_COLOR.g = (ARef_constant * A_color.g) + (L_color.g * ((D_vector.g * difuPart) + specPart));
-                                rgb_COLOR.b = (ARef_constant * A_color.b) + (L_color.b * ((D_vector.b * difuPart) + specPart));
-                            }
-                        }
-                        if (rgb_COLOR.r > 255) {
-                            rgb_COLOR.r = 255;
-                        }
-                        if (rgb_COLOR.g > 255) {
-                            rgb_COLOR.g = 255;
-                        }
-                        if (rgb_COLOR.b > 255) {
-                            rgb_COLOR.b = 255;
-                        }
-                        rgbMatrix[actual][yScan].r = rgb_COLOR.r;
-                        rgbMatrix[actual][yScan].g = rgb_COLOR.g;
-                        rgbMatrix[actual][yScan].b = rgb_COLOR.b;
                     }
                 }
                 if (yScan == pointsAux[1].Py && thirdLiner == 'FALSE') {
@@ -475,48 +457,22 @@ function scanLine(triangle) {
 
             for (let yScan = pointsAux[0].Py; yScan <= yMax; yScan++) {
                 for (let actual = Math.floor(xMin); actual <= Math.floor(xMax); actual++){
-                    pointScreen = pixelsToscreen(actual,yScan);
-                    bariSum = calculateBaricentricFactors(pointsAux[0].Xs,pointsAux[0].Ys,pointsAux[1].Xs,pointsAux[1].Ys,pointsAux[2].Xs,pointsAux[2].Ys,pointScreen.xS,pointScreen.yS);
-                    pointToBe = calculateBaricentricSum(pointsAux[0],pointsAux[1],pointsAux[2],bariSum);
-                    if (pointToBe.z < rgbMatrix[actual][yScan].z) {
-                        rgbMatrix[actual][yScan].z = pointToBe.z;
-                        vector_N = calculateBaricentricNormal(pointsAux[0],pointsAux[1],pointsAux[2],bariSum);
-                        vector_L = calculateLightVector(pointToBe,L_point);
-                        vector_R = getReflectionVector(vector_N,vector_L);
-                        vector_R = normalize(vector_R);
-                        vector_V = calculateVisionVector(pointToBe);
-                        if (cosinTwoVectors(vector_N,vector_V) < 0) {
-                            vector_N = scalarVector(vector_N,-1);
+                    if (actual >= 0 && actual < horizontalCanvas && yScan >=0 && yScan < verticalCanvas) {
+                        pointScreen = pixelsToscreen(actual,yScan);
+                        bariSum = calculateBaricentricFactors(pointsAux[0].Xs,pointsAux[0].Ys,pointsAux[1].Xs,pointsAux[1].Ys,pointsAux[2].Xs,pointsAux[2].Ys,pointScreen.xS,pointScreen.yS);
+                        pointToBe = calculateBaricentricSum(pointsAux[0],pointsAux[1],pointsAux[2],bariSum);
+                        if (pointToBe.z < rgbMatrix[actual][yScan].z) {
+                            rgbMatrix[actual][yScan].z = pointToBe.z;
+                            vector_N = calculateBaricentricNormal(pointsAux[0],pointsAux[2],pointsAux[1],bariSum);
+                            vector_L = calculateLightVector(pointToBe,L_point);
+                            vector_R = getReflectionVector(vector_N,vector_L);
+                            vector_R = normalize(vector_R);
+                            vector_V = calculateVisionVector(pointToBe);
+                            rgb_COLOR = calculateColor(vector_N,vector_L,vector_R,vector_V);
+                            rgbMatrix[actual][yScan].r = rgb_COLOR.r;
+                            rgbMatrix[actual][yScan].g = rgb_COLOR.g;
+                            rgbMatrix[actual][yScan].b = rgb_COLOR.b;
                         }
-                        if (cosinTwoVectors(vector_N,vector_L) < 0) {
-                            rgb_COLOR.r = ARef_constant * A_color.r;
-                            rgb_COLOR.g = ARef_constant * A_color.g;
-                            rgb_COLOR.b = ARef_constant * A_color.b;
-                        } else {
-                            let difuPart = Difu_constant * cosinTwoVectors(vector_N,vector_L);
-                            if (cosinTwoVectors(vector_V,vector_R) < 0) {
-                                rgb_COLOR.r = (ARef_constant * A_color.r) + (L_color.r * D_vector.r * difuPart);
-                                rgb_COLOR.g = (ARef_constant * A_color.g) + (L_color.g * D_vector.g * difuPart);
-                                rgb_COLOR.b = (ARef_constant * A_color.b) + (L_color.b * D_vector.b * difuPart);
-                            } else {
-                                let specPart = (Spec_constant * Math.pow(cosinTwoVectors(vector_R,vector_V),Rugo_constant));
-                                rgb_COLOR.r = (ARef_constant * A_color.r) + (L_color.r * ((D_vector.r * difuPart) + specPart));
-                                rgb_COLOR.g = (ARef_constant * A_color.g) + (L_color.g * ((D_vector.g * difuPart) + specPart));
-                                rgb_COLOR.b = (ARef_constant * A_color.b) + (L_color.b * ((D_vector.b * difuPart) + specPart));
-                            }
-                        }
-                        if (rgb_COLOR.r > 255) {
-                            rgb_COLOR.r = 255;
-                        }
-                        if (rgb_COLOR.g > 255) {
-                            rgb_COLOR.g = 255;
-                        }
-                        if (rgb_COLOR.b > 255) {
-                            rgb_COLOR.b = 255;
-                        }
-                        rgbMatrix[actual][yScan].r = rgb_COLOR.r;
-                        rgbMatrix[actual][yScan].g = rgb_COLOR.g;
-                        rgbMatrix[actual][yScan].b = rgb_COLOR.b;
                     }
                 }
                 if (yScan == pointsAux[1].Py && thirdLiner == 'FALSE') {
