@@ -436,6 +436,7 @@ function scanLine(triangle) {
                         pointScreen = pixelsToscreen(actual,yScan);
                         bariFactors = calculateBaricentricFactors(pointsAux[0].Xs,pointsAux[0].Ys,pointsAux[1].Xs,pointsAux[1].Ys,pointsAux[2].Xs,pointsAux[2].Ys,pointScreen.xS,pointScreen.yS);
                         pointToBe = calculateBaricentricSum(pointsAux[0],pointsAux[1],pointsAux[2],bariFactors);
+
                         zBuffer(pointToBe,pointsAux,actual,yScan,bariFactors);
                     }
                 }
@@ -471,9 +472,10 @@ function zBuffer(pointToBe,pointsAux,actual,yScan,bariFactors){
         vector_R = normalize(vector_R);
         vector_V = calculateVisionVector(pointToBe);
         rgb_COLOR = calculateColor(vector_N,vector_L,vector_R,vector_V);
-        rgbMatrix[actual][yScan].r = rgb_COLOR.r;
-        rgbMatrix[actual][yScan].g = rgb_COLOR.g;
-        rgbMatrix[actual][yScan].b = rgb_COLOR.b;
+        rgbMatrix[actual][yScan].r = Math.floor(rgb_COLOR.r);
+        rgbMatrix[actual][yScan].g = Math.floor(rgb_COLOR.g);
+        rgbMatrix[actual][yScan].b = Math.floor(rgb_COLOR.b);
+        
     }
 }
 
@@ -562,7 +564,9 @@ btn_start.onclick = function doTheThing() {
         scanLine(trianglesArray[i]);
     }
     ctx.fillText("got here", 10, 10);
+    console.log(rgbMatrix);
     putColorInScreen();
+    
 };
 
 let object = undefined;
