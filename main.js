@@ -133,11 +133,11 @@ function calculateTrianglesNormal() {
     for (let i = 0; i < trianglesArray.length; i++) {
         actualTriangle = trianglesArray[i];
         firstVector = {x:pointsArray[actualTriangle.first].x - pointsArray[actualTriangle.second].x,
-                        y:pointsArray[actualTriangle.first].y - pointsArray[actualTriangle.second].y,
-                        z:pointsArray[actualTriangle.first].z - pointsArray[actualTriangle.second].z};
+            y:pointsArray[actualTriangle.first].y - pointsArray[actualTriangle.second].y,
+            z:pointsArray[actualTriangle.first].z - pointsArray[actualTriangle.second].z};
         secondVector = {x:pointsArray[actualTriangle.third].x - pointsArray[actualTriangle.second].x,
-                        y:pointsArray[actualTriangle.third].y - pointsArray[actualTriangle.second].y,
-                        z:pointsArray[actualTriangle.third].z - pointsArray[actualTriangle.second].z};
+            y:pointsArray[actualTriangle.third].y - pointsArray[actualTriangle.second].y,
+            z:pointsArray[actualTriangle.third].z - pointsArray[actualTriangle.second].z};
         normal = crossProductVector(firstVector,secondVector);
         normal = normalize(normal);
         trianglesArray[i].Nx = normal.x;
@@ -197,17 +197,17 @@ function flatToScreenPoint() {
 
 function screenToPixels() {
     for (let i = 0; i < pointsArray.length; i++) {
-        pointsArray[i].Px = Math.floor(horizontalCanvas * ((1 + (pointsArray[i].Xs / halfWidth)))/2);
-        pointsArray[i].Py = Math.floor(verticalCanvas * ((1 - (pointsArray[i].Ys / halfHeight)))/2);
+        pointsArray[i].Px = Math.floor(horizontalCanvas * ((1 + (pointsArray[i].Xs / halfWidth))/2));
+        pointsArray[i].Py = Math.floor(verticalCanvas * ((1 - (pointsArray[i].Ys / halfHeight))/2));
     }
 }
 
-function pixelsToscreen(pX,pY) {
-    return {xS:(((((pX + 0.5) / horizontalCanvas) * 2) -1) * halfWidth), yS:(((((pY + 0.5) / verticalCanvas) * 2) -1) * halfHeight)};
+function pixelsToScreen(pX, pY) {
+    return {xS:(((((pX + 0.5) / horizontalCanvas) * 2) - 1) * halfWidth), yS:(((((pY + 0.5) / verticalCanvas) * 2) - 1) * halfHeight * -1)};
 }
 
 function getLineGrowth(firstPoint,secondPoint){
-    return ((firstPoint.Ys - secondPoint.Ys) / (firstPoint.Xs - secondPoint.Xs));//isso vai retornar o a, mas para usar o 1/a, basta inverter
+    return ((secondPoint.Py - firstPoint.Py) / (secondPoint.Px - firstPoint.Px));//isso vai retornar o a, mas para usar o 1/a, basta inverter
 }
 
 function calculateBaricentricFactors(firstX, firstY, secondX, secondY, thirdX, thirdY, aimX, aimY) {
@@ -314,8 +314,8 @@ function calculateVisionVector(point) {
     return normalize(returner);
 }
 
-function calculateColor(vector_N,vector_L,vector_R,vector_V) {
-    let rgb_COLOR = {r:0,g:0,b:0};
+function calculateColor(vector_N,vector_L,vector_R,vector_V,z_Buffer) {
+    let rgb_COLOR = {r:0,g:0,b:0,z:z_Buffer};
     if (cosinTwoVectors(vector_N,vector_V) < 0) {
         vector_N = scalarVector(vector_N,-1);
     }
@@ -363,11 +363,6 @@ function scanLine(triangle) {
     let pointScreen = undefined;
     let bariFactors = undefined;
     let pointToBe = {x:0,y:0,z:0};
-    let vector_N = {x:0,y:0,z:0};
-    let vector_L = {x:0,y:0,z:0};
-    let vector_R = {x:0,y:0,z:0};
-    let vector_V = {x:0,y:0,z:0};
-    let rgb_COLOR = {r:0,g:0,b:0};
     let thirdLiner = 'FALSE';
     if (pointsAux[0].Py == pointsAux[1].Py) {//caso do triango com dois pontos na base de cima
         if (pointsAux[0].Px > pointsAux[1].Px) {
@@ -382,7 +377,7 @@ function scanLine(triangle) {
         for (let yScan = pointsAux[0].Py; yScan <= yMax; yScan++) {
             for (let actual = Math.floor(xMin); actual <= Math.floor(xMax); actual++){
                 if (actual >= 0 && actual < horizontalCanvas && yScan >=0 && yScan < verticalCanvas) {
-                    pointScreen = pixelsToscreen(actual,yScan);
+                    pointScreen = pixelsToScreen(actual,yScan);
                     bariFactors = calculateBaricentricFactors(pointsAux[0].Xs,pointsAux[0].Ys,pointsAux[1].Xs,pointsAux[1].Ys,pointsAux[2].Xs,pointsAux[2].Ys,pointScreen.xS,pointScreen.yS);
                     pointToBe = calculateBaricentricSum(pointsAux[0],pointsAux[1],pointsAux[2],bariFactors);
                     zBuffer(pointToBe,pointsAux,actual,yScan,bariFactors);
@@ -401,7 +396,7 @@ function scanLine(triangle) {
             for (let yScan = pointsAux[0].Py; yScan <= yMax; yScan++) {
                 for (let actual = Math.floor(xMin); actual <= Math.floor(xMax); actual++){
                     if (actual >= 0 && actual < horizontalCanvas && yScan >=0 && yScan < verticalCanvas) {
-                        pointScreen = pixelsToscreen(actual,yScan);
+                        pointScreen = pixelsToScreen(actual,yScan);
                         bariFactors = calculateBaricentricFactors(pointsAux[0].Xs,pointsAux[0].Ys,pointsAux[2].Xs,pointsAux[2].Ys,pointsAux[1].Xs,pointsAux[1].Ys,pointScreen.xS,pointScreen.yS);
                         pointToBe = calculateBaricentricSum(pointsAux[0],pointsAux[2],pointsAux[1],bariFactors);
                         zBuffer(pointToBe,pointsAux,actual,yScan,bariFactors);
@@ -433,10 +428,9 @@ function scanLine(triangle) {
             for (let yScan = pointsAux[0].Py; yScan <= yMax; yScan++) {
                 for (let actual = Math.floor(xMin); actual <= Math.floor(xMax); actual++){
                     if (actual >= 0 && actual < horizontalCanvas && yScan >=0 && yScan < verticalCanvas) {
-                        pointScreen = pixelsToscreen(actual,yScan);
+                        pointScreen = pixelsToScreen(actual,yScan);
                         bariFactors = calculateBaricentricFactors(pointsAux[0].Xs,pointsAux[0].Ys,pointsAux[1].Xs,pointsAux[1].Ys,pointsAux[2].Xs,pointsAux[2].Ys,pointScreen.xS,pointScreen.yS);
                         pointToBe = calculateBaricentricSum(pointsAux[0],pointsAux[1],pointsAux[2],bariFactors);
-
                         zBuffer(pointToBe,pointsAux,actual,yScan,bariFactors);
                     }
                 }
@@ -460,22 +454,20 @@ function scanLine(triangle) {
             }
         }
     }
-    console.log('opa pego');
 }
 
 function zBuffer(pointToBe,pointsAux,actual,yScan,bariFactors){
     if (pointToBe.z < rgbMatrix[actual][yScan].z) {
-        rgbMatrix[actual][yScan].z = pointToBe.z;
-        vector_N = calculateBaricentricNormal(pointsAux[0],pointsAux[2],pointsAux[1],bariFactors);
-        vector_L = calculateLightVector(pointToBe,L_point);
-        vector_R = getReflectionVector(vector_N,vector_L);
+        let vector_N = calculateBaricentricNormal(pointsAux[0],pointsAux[2],pointsAux[1],bariFactors);
+        let vector_L = calculateLightVector(pointToBe,L_point);
+        let vector_R = getReflectionVector(vector_N,vector_L);
         vector_R = normalize(vector_R);
-        vector_V = calculateVisionVector(pointToBe);
-        rgb_COLOR = calculateColor(vector_N,vector_L,vector_R,vector_V);
-        rgbMatrix[actual][yScan].r = Math.floor(rgb_COLOR.r);
-        rgbMatrix[actual][yScan].g = Math.floor(rgb_COLOR.g);
-        rgbMatrix[actual][yScan].b = Math.floor(rgb_COLOR.b);
-        
+        let vector_V = calculateVisionVector(pointToBe);
+        let rgb_COLOR = calculateColor(vector_N,vector_L,vector_R,vector_V,pointToBe.z);
+        rgb_COLOR.r = Math.floor(rgb_COLOR.r);
+        rgb_COLOR.g = Math.floor(rgb_COLOR.g);
+        rgb_COLOR.b = Math.floor(rgb_COLOR.b);
+        rgbMatrix[actual][yScan] = rgb_COLOR;
     }
 }
 
@@ -530,10 +522,15 @@ btn_start.onclick = function doTheThing() {
     halfHeight = parseFloat(camera[11]);
     horizontalCanvas = Math.ceil((verticalCanvas/(halfHeight*2))*(halfWidth*2));
     resizeCanvas(horizontalCanvas,verticalCanvas);
-    basicRGB.r = A_color.r;
-    basicRGB.g = A_color.g;
-    basicRGB.b = A_color.b;
-    rgbMatrix = [...Array(horizontalCanvas)].map(i => Array(verticalCanvas).fill(basicRGB));
+    rgbMatrix = new Array(horizontalCanvas);
+    for (let i = 0; i < horizontalCanvas; i++) {
+        rgbMatrix[i] = new Array(verticalCanvas);
+    }
+    for (let i = 0; i < horizontalCanvas; i++) {
+        for (let j = 0; j < verticalCanvas; j++) {
+            rgbMatrix[i][j] = {r:A_color.r,g:A_color.g,b:A_color.b,z:9999};
+        }
+    }
     V_vector = orthogonalizeVector(V_vector,N_vector);
     U_vector = crossProductVector(N_vector,V_vector);
     N_vector = normalize(N_vector);
@@ -566,7 +563,7 @@ btn_start.onclick = function doTheThing() {
     ctx.fillText("got here", 10, 10);
     console.log(rgbMatrix);
     putColorInScreen();
-    
+
 };
 
 let object = undefined;
