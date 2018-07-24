@@ -89,6 +89,16 @@ function cosinTwoVectors(firstVector,secondVector) {
     return returner;
 }
 
+function cosinTwoVectorsNotNormalized(firstVector,secondVector) {
+    let returner = ((firstVector.x * secondVector.x) + (firstVector.y * secondVector.y) + (firstVector.z * secondVector.z));
+    let returner2 = Math.sqrt(Math.pow(firstVector.x,2) + Math.pow(firstVector.y,2) + Math.pow(firstVector.z,2)) * Math.sqrt(Math.pow(secondVector.x,2) + Math.pow(secondVector.y,2) + Math.pow(secondVector.z,2));
+    return returner/returner2;
+}
+
+function getNorma(vector) {
+    return Math.sqrt(Math.pow(vector.x,2) + Math.pow(vector.y,2) + Math.pow(vector.z,2));
+}
+
 function normalize(vector) {
     let norma = Math.sqrt(Math.pow((vector.x),2) + Math.pow(vector.y,2) + Math.pow(vector.z,2));
     let returner = {x: (vector.x / norma),y: (vector.y / norma),z: (vector.z / norma)};
@@ -201,7 +211,28 @@ function getLineGrowth(firstPoint,secondPoint){
 }
 
 function calculateBaricentricFactors(firstX, firstY, secondX, secondY, thirdX, thirdY, aimX, aimY) {
-    let B = [[1,1,1,1],[firstX,secondX,thirdX,aimX],[firstY,secondY,thirdY,aimY]];
+    let first = {x: thirdX - firstX, y:thirdY - firstY, z:0};
+    let second = {x: secondX - firstX, y:secondY - firstY, z:0};
+    let cosin = cosinTwoVectorsNotNormalized(first,second);
+    let barFactors = {alpha: 0, beta: 0, gama: 0};
+    if (cosin != -1 && cosin != 1) {
+        first = {x: thirdX - firstX, y:thirdY - firstY, z:0};
+        second = {x: secondX - firstX, y:secondY - firstY, z:0};
+        let areaTriangle = getNorma(crossProductVector(first,second));
+        first = {x: thirdX - aimX, y:thirdY - aimY, z:0};
+        second = {x: secondX - aimX, y:secondY - aimY, z:0};
+        barFactors.alpha = getNorma(crossProductVector(first,second)) / areaTriangle;
+        first = {x: thirdX - aimX, y:thirdY - aimY, z:0};
+        second = {x: firstX - aimX, y:firstY - aimY, z:0};
+        barFactors.beta = getNorma(crossProductVector(first,second)) / areaTriangle;
+        first = {x: secondX - aimX, y:secondY - aimY, z:0};
+        second = {x: firstX - aimX, y:firstY - aimY, z:0};
+        barFactors.gama = getNorma(crossProductVector(first,second)) / areaTriangle;
+    } else if (cosin == -1) {
+        barFactors.alpha = 0;
+
+    }
+    /*let B = [[1,1,1,1],[firstX,secondX,thirdX,aimX],[firstY,secondY,thirdY,aimY]];
     let factor1 = 0;
     let factor2 = 0;
     let RowFinal = 3;
@@ -237,11 +268,11 @@ function calculateBaricentricFactors(firstX, firstY, secondX, secondY, thirdX, t
         for (let k = i; k <4; k++) {
             B[i][k] = B[i][k] * factor1;
         }
-    }
+    }*/
     //ctx.fillText(B[0][0] + ' ' + B[0][1] + ' ' + B[0][2] + ' ' + B[0][3], 10, 10);
     //ctx.fillText(B[1][0] + ' ' + B[1][1] + ' ' + B[1][2] + ' ' + B[1][3], 10, 30);
     //ctx.fillText(B[2][0] + ' ' + B[2][1] + ' ' + B[2][2] + ' ' + B[2][3], 10, 50);
-    return {alpha: B[0][3], beta: B[1][3], gama: B[2][3]};
+    return barFactors;
 }
 
 function calculateBaricentricSum(first,second,third,factors) {
@@ -525,9 +556,9 @@ btn_visual_obj.onclick = function clickObj(){btn_obj.click();};
 btn_visual_cam.onclick = function clickCam(){btn_cam.click();};
 btn_visual_lig.onclick = function clickCam(){btn_lig.click();};
 btn_start.onclick = function doTheThing() {
-    //let tester =  calculateBaricentricFactors(0,12,0,9,2,4,1,7);
-    //ctx.fillText(tester.alpha + ' ' + tester.beta + ' ' + tester.gama, 10, 100);
-    light = light.split(/[\r\n\s]+/).filter(function(el) {return (el.length > 0)});
+    let tester =  calculateBaricentricFactors(0,12,0,9,2,4,1,7);
+    ctx.fillText(tester.alpha + ' ' + tester.beta + ' ' + tester.gama, 10, 100);
+    /*light = light.split(/[\r\n\s]+/).filter(function(el) {return (el.length > 0)});
     L_point = {x:parseFloat(light[0]),y:parseFloat(light[1]),z:parseFloat(light[2])};
     ARef_constant = parseFloat(light[3]);
     A_color = {r:parseFloat(light[4]),g:parseFloat(light[5]),b:parseFloat(light[6])};
@@ -579,7 +610,7 @@ btn_start.onclick = function doTheThing() {
         scanLine(trianglesArray[i]);
     }
     ctx.fillText("got here", 10, 10);
-    drawTriangles();
+    drawTriangles();*/
 };
 
 let object = undefined;
