@@ -369,7 +369,7 @@ function scanLine(triangle) {
     let vector_V = {x:0,y:0,z:0};
     let rgb_COLOR = {r:0,g:0,b:0};
     let thirdLiner = 'FALSE';
-    if (pointsAux[0].Py == pointsAux[1].Py) {
+    if (pointsAux[0].Py == pointsAux[1].Py) {//caso do triango com dois pontos na base de cima
         if (pointsAux[0].Px > pointsAux[1].Px) {
             let aux = pointsAux[0];
             pointsAux[0] = pointsAux[1];
@@ -377,59 +377,34 @@ function scanLine(triangle) {
         }
         xMin = pointsAux[0].Px;
         xMax = pointsAux[1].Px;
-
         firstLineGrowth = (1 / getLineGrowth(pointsAux[0],pointsAux[2]));
         secondLineGrowth = (1 / getLineGrowth(pointsAux[1],pointsAux[2]));
-
         for (let yScan = pointsAux[0].Py; yScan <= yMax; yScan++) {
             for (let actual = Math.floor(xMin); actual <= Math.floor(xMax); actual++){
                 if (actual >= 0 && actual < horizontalCanvas && yScan >=0 && yScan < verticalCanvas) {
                     pointScreen = pixelsToscreen(actual,yScan);
                     bariFactors = calculateBaricentricFactors(pointsAux[0].Xs,pointsAux[0].Ys,pointsAux[1].Xs,pointsAux[1].Ys,pointsAux[2].Xs,pointsAux[2].Ys,pointScreen.xS,pointScreen.yS);
                     pointToBe = calculateBaricentricSum(pointsAux[0],pointsAux[1],pointsAux[2],bariFactors);
-                    if (pointToBe.z < rgbMatrix[actual][yScan].z) {
-                        rgbMatrix[actual][yScan].z = pointToBe.z;
-                        vector_N = calculateBaricentricNormal(pointsAux[0],pointsAux[2],pointsAux[1],bariFactors);
-                        vector_L = calculateLightVector(pointToBe,L_point);
-                        vector_R = getReflectionVector(vector_N,vector_L);
-                        vector_R = normalize(vector_R);
-                        vector_V = calculateVisionVector(pointToBe);
-                        rgb_COLOR = calculateColor(vector_N,vector_L,vector_R,vector_V);
-                        rgbMatrix[actual][yScan].r = rgb_COLOR.r;
-                        rgbMatrix[actual][yScan].g = rgb_COLOR.g;
-                        rgbMatrix[actual][yScan].b = rgb_COLOR.b;
-                    }
+                    zBuffer(pointToBe,pointsAux,actual,yScan,bariFactors);
                 }
             }
             xMin += firstLineGrowth;
             xMax += secondLineGrowth;
         }
-    } else {
+    } else {//outros 3 tipos de triangulo
         xMin = pointsAux[0].Px;
         xMax = pointsAux[0].Px;
         if (pointsAux[1].Px > pointsAux[2].Px) {
             firstLineGrowth = (1 / getLineGrowth(pointsAux[0],pointsAux[2]));
             secondLineGrowth = (1 / getLineGrowth(pointsAux[0],pointsAux[1]));
             thirdLineGrowth = (1 / getLineGrowth(pointsAux[2],pointsAux[1]));
-
             for (let yScan = pointsAux[0].Py; yScan <= yMax; yScan++) {
                 for (let actual = Math.floor(xMin); actual <= Math.floor(xMax); actual++){
                     if (actual >= 0 && actual < horizontalCanvas && yScan >=0 && yScan < verticalCanvas) {
                         pointScreen = pixelsToscreen(actual,yScan);
                         bariFactors = calculateBaricentricFactors(pointsAux[0].Xs,pointsAux[0].Ys,pointsAux[2].Xs,pointsAux[2].Ys,pointsAux[1].Xs,pointsAux[1].Ys,pointScreen.xS,pointScreen.yS);
                         pointToBe = calculateBaricentricSum(pointsAux[0],pointsAux[2],pointsAux[1],bariFactors);
-                        if (pointToBe.z < rgbMatrix[actual][yScan].z) {
-                            rgbMatrix[actual][yScan].z = pointToBe.z;
-                            vector_N = calculateBaricentricNormal(pointsAux[0],pointsAux[2],pointsAux[1],bariFactors);
-                            vector_L = calculateLightVector(pointToBe,L_point);
-                            vector_R = getReflectionVector(vector_N,vector_L);
-                            vector_R = normalize(vector_R);
-                            vector_V = calculateVisionVector(pointToBe);
-                            rgb_COLOR = calculateColor(vector_N,vector_L,vector_R,vector_V);
-                            rgbMatrix[actual][yScan].r = rgb_COLOR.r;
-                            rgbMatrix[actual][yScan].g = rgb_COLOR.g;
-                            rgbMatrix[actual][yScan].b = rgb_COLOR.b;
-                        }
+                        zBuffer(pointToBe,pointsAux,actual,yScan,bariFactors);
                     }
                 }
                 if (yScan == pointsAux[1].Py && thirdLiner == 'FALSE') {
@@ -461,18 +436,7 @@ function scanLine(triangle) {
                         pointScreen = pixelsToscreen(actual,yScan);
                         bariFactors = calculateBaricentricFactors(pointsAux[0].Xs,pointsAux[0].Ys,pointsAux[1].Xs,pointsAux[1].Ys,pointsAux[2].Xs,pointsAux[2].Ys,pointScreen.xS,pointScreen.yS);
                         pointToBe = calculateBaricentricSum(pointsAux[0],pointsAux[1],pointsAux[2],bariFactors);
-                        if (pointToBe.z < rgbMatrix[actual][yScan].z) {
-                            rgbMatrix[actual][yScan].z = pointToBe.z;
-                            vector_N = calculateBaricentricNormal(pointsAux[0],pointsAux[2],pointsAux[1],bariFactors);
-                            vector_L = calculateLightVector(pointToBe,L_point);
-                            vector_R = getReflectionVector(vector_N,vector_L);
-                            vector_R = normalize(vector_R);
-                            vector_V = calculateVisionVector(pointToBe);
-                            rgb_COLOR = calculateColor(vector_N,vector_L,vector_R,vector_V);
-                            rgbMatrix[actual][yScan].r = rgb_COLOR.r;
-                            rgbMatrix[actual][yScan].g = rgb_COLOR.g;
-                            rgbMatrix[actual][yScan].b = rgb_COLOR.b;
-                        }
+                        zBuffer(pointToBe,pointsAux,actual,yScan,bariFactors);
                     }
                 }
                 if (yScan == pointsAux[1].Py && thirdLiner == 'FALSE') {
@@ -494,6 +458,22 @@ function scanLine(triangle) {
                 }
             }
         }
+    }
+    console.log('opa pego');
+}
+
+function zBuffer(pointToBe,pointsAux,actual,yScan,bariFactors){
+    if (pointToBe.z < rgbMatrix[actual][yScan].z) {
+        rgbMatrix[actual][yScan].z = pointToBe.z;
+        vector_N = calculateBaricentricNormal(pointsAux[0],pointsAux[2],pointsAux[1],bariFactors);
+        vector_L = calculateLightVector(pointToBe,L_point);
+        vector_R = getReflectionVector(vector_N,vector_L);
+        vector_R = normalize(vector_R);
+        vector_V = calculateVisionVector(pointToBe);
+        rgb_COLOR = calculateColor(vector_N,vector_L,vector_R,vector_V);
+        rgbMatrix[actual][yScan].r = rgb_COLOR.r;
+        rgbMatrix[actual][yScan].g = rgb_COLOR.g;
+        rgbMatrix[actual][yScan].b = rgb_COLOR.b;
     }
 }
 
