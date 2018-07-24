@@ -361,7 +361,7 @@ function scanLine(triangle) {
     let secondLineGrowth = 0;
     let thirdLineGrowth = 0;
     let pointScreen = undefined;
-    let bariSum = undefined;
+    let bariFactors = undefined;
     let pointToBe = {x:0,y:0,z:0};
     let vector_N = {x:0,y:0,z:0};
     let vector_L = {x:0,y:0,z:0};
@@ -385,11 +385,11 @@ function scanLine(triangle) {
             for (let actual = Math.floor(xMin); actual <= Math.floor(xMax); actual++){
                 if (actual >= 0 && actual < horizontalCanvas && yScan >=0 && yScan < verticalCanvas) {
                     pointScreen = pixelsToscreen(actual,yScan);
-                    bariSum = calculateBaricentricFactors(pointsAux[0].Xs,pointsAux[0].Ys,pointsAux[1].Xs,pointsAux[1].Ys,pointsAux[2].Xs,pointsAux[2].Ys,pointScreen.xS,pointScreen.yS);
-                    pointToBe = calculateBaricentricSum(pointsAux[0],pointsAux[1],pointsAux[2],bariSum);
+                    bariFactors = calculateBaricentricFactors(pointsAux[0].Xs,pointsAux[0].Ys,pointsAux[1].Xs,pointsAux[1].Ys,pointsAux[2].Xs,pointsAux[2].Ys,pointScreen.xS,pointScreen.yS);
+                    pointToBe = calculateBaricentricSum(pointsAux[0],pointsAux[1],pointsAux[2],bariFactors);
                     if (pointToBe.z < rgbMatrix[actual][yScan].z) {
                         rgbMatrix[actual][yScan].z = pointToBe.z;
-                        vector_N = calculateBaricentricNormal(pointsAux[0],pointsAux[2],pointsAux[1],bariSum);
+                        vector_N = calculateBaricentricNormal(pointsAux[0],pointsAux[2],pointsAux[1],bariFactors);
                         vector_L = calculateLightVector(pointToBe,L_point);
                         vector_R = getReflectionVector(vector_N,vector_L);
                         vector_R = normalize(vector_R);
@@ -416,11 +416,11 @@ function scanLine(triangle) {
                 for (let actual = Math.floor(xMin); actual <= Math.floor(xMax); actual++){
                     if (actual >= 0 && actual < horizontalCanvas && yScan >=0 && yScan < verticalCanvas) {
                         pointScreen = pixelsToscreen(actual,yScan);
-                        bariSum = calculateBaricentricFactors(pointsAux[0].Xs,pointsAux[0].Ys,pointsAux[2].Xs,pointsAux[2].Ys,pointsAux[1].Xs,pointsAux[1].Ys,pointScreen.xS,pointScreen.yS);
-                        pointToBe = calculateBaricentricSum(pointsAux[0],pointsAux[2],pointsAux[1],bariSum);
+                        bariFactors = calculateBaricentricFactors(pointsAux[0].Xs,pointsAux[0].Ys,pointsAux[2].Xs,pointsAux[2].Ys,pointsAux[1].Xs,pointsAux[1].Ys,pointScreen.xS,pointScreen.yS);
+                        pointToBe = calculateBaricentricSum(pointsAux[0],pointsAux[2],pointsAux[1],bariFactors);
                         if (pointToBe.z < rgbMatrix[actual][yScan].z) {
                             rgbMatrix[actual][yScan].z = pointToBe.z;
-                            vector_N = calculateBaricentricNormal(pointsAux[0],pointsAux[2],pointsAux[1],bariSum);
+                            vector_N = calculateBaricentricNormal(pointsAux[0],pointsAux[2],pointsAux[1],bariFactors);
                             vector_L = calculateLightVector(pointToBe,L_point);
                             vector_R = getReflectionVector(vector_N,vector_L);
                             vector_R = normalize(vector_R);
@@ -459,11 +459,11 @@ function scanLine(triangle) {
                 for (let actual = Math.floor(xMin); actual <= Math.floor(xMax); actual++){
                     if (actual >= 0 && actual < horizontalCanvas && yScan >=0 && yScan < verticalCanvas) {
                         pointScreen = pixelsToscreen(actual,yScan);
-                        bariSum = calculateBaricentricFactors(pointsAux[0].Xs,pointsAux[0].Ys,pointsAux[1].Xs,pointsAux[1].Ys,pointsAux[2].Xs,pointsAux[2].Ys,pointScreen.xS,pointScreen.yS);
-                        pointToBe = calculateBaricentricSum(pointsAux[0],pointsAux[1],pointsAux[2],bariSum);
+                        bariFactors = calculateBaricentricFactors(pointsAux[0].Xs,pointsAux[0].Ys,pointsAux[1].Xs,pointsAux[1].Ys,pointsAux[2].Xs,pointsAux[2].Ys,pointScreen.xS,pointScreen.yS);
+                        pointToBe = calculateBaricentricSum(pointsAux[0],pointsAux[1],pointsAux[2],bariFactors);
                         if (pointToBe.z < rgbMatrix[actual][yScan].z) {
                             rgbMatrix[actual][yScan].z = pointToBe.z;
-                            vector_N = calculateBaricentricNormal(pointsAux[0],pointsAux[2],pointsAux[1],bariSum);
+                            vector_N = calculateBaricentricNormal(pointsAux[0],pointsAux[2],pointsAux[1],bariFactors);
                             vector_L = calculateLightVector(pointToBe,L_point);
                             vector_R = getReflectionVector(vector_N,vector_L);
                             vector_R = normalize(vector_R);
@@ -497,7 +497,7 @@ function scanLine(triangle) {
     }
 }
 
-function drawTriangles() {//algoritmo do pintor
+function putColorInScreen() {//algoritmo do pintor
     ctx.clearRect(0,0,canvas.width,canvas.height);
     for (let i = 0; i < horizontalCanvas; i++) {
         for (let j = 0; j < verticalCanvas; j++) {
@@ -582,7 +582,7 @@ btn_start.onclick = function doTheThing() {
         scanLine(trianglesArray[i]);
     }
     ctx.fillText("got here", 10, 10);
-    //drawTriangles();
+    putColorInScreen();
 };
 
 let object = undefined;
