@@ -82,7 +82,7 @@ function scalarVector(vector, scalar) {
 }
 
 function multiplicateFactorByFactor(firstVector,secondVector){
-    return (firstVector.x*secondVector.x) + (firstVector.y*secondVector.y);// + (firstVector.z*secondVector.z);
+    return (firstVector.x*secondVector.x) + (firstVector.y*secondVector.y) + (firstVector.z*secondVector.z);
 }
 
 function vectorSum(firstVector,secondVector){
@@ -144,9 +144,9 @@ function reflectNormal(vector_N,vector_V) {
 }
 
 function calculateBarycentricFactors(firstX, firstY, secondX, secondY, thirdX, thirdY, aimX, aimY) {
-    let v0 = {x: secondX - firstX, y:secondY - firstY};//, z:0};
-    let v1 = {x: thirdX - firstX, y:thirdY - firstY};//, z:0};
-    let v2 = {x: aimX - firstX, y:aimY - firstY};//, z:0};
+    let v0 = {x: secondX - firstX, y:secondY - firstY, z:0};
+    let v1 = {x: thirdX - firstX, y:thirdY - firstY, z:0};
+    let v2 = {x: aimX - firstX, y:aimY - firstY, z:0};
     let d00 = multiplicateFactorByFactor(v0,v0);
     let d01 = multiplicateFactorByFactor(v0,v1);
     let d11 = multiplicateFactorByFactor(v1,v1);
@@ -186,6 +186,58 @@ function calculateVisionVector(point) {
 function getReflectionVector(normalVector,vectorToReflect){
     let aux = scalarVector(normalVector,(2 * (cosineTwoVectorsNormalized(normalVector,vectorToReflect))));
     return {x:aux.x-vectorToReflect.x,y:aux.y-vectorToReflect.y,z:aux.z-vectorToReflect.z};
+}
+
+function intersectPlaneVision(point,vector) {
+    let denom = ((vector.x * visionPlane.a) + (vector.y * visionPlane.b) + (vector.z * visionPlane.c));
+    let factor = ((point.x * visionPlane.a) + (point.y * visionPlane.b) + (point.z * visionPlane.c) + visionPlane.d) / denom ;
+    return vectorSum(point,scalarVector(vector,factor));
+    // Remembering that this result can be infinity , to treat on the upper method
+}
+
+function intersectPlaneRight(point,vector) {
+    let denom = ((vector.x * rightPlane.a) + (vector.y * rightPlane.b) + (vector.z * rightPlane.c));
+    let factor = ((point.x * rightPlane.a) + (point.y * rightPlane.b) + (point.z * rightPlane.c) + rightPlane.d) / denom ;
+    return vectorSum(point,scalarVector(vector,factor));
+    // Remembering that this result can be infinity , to treat on the upper method
+}
+
+function intersectPlaneLeft(point,vector) {
+    let denom = ((vector.x * leftPlane.a) + (vector.y * leftPlane.b) + (vector.z * leftPlane.c));
+    let factor = ((point.x * leftPlane.a) + (point.y * leftPlane.b) + (point.z * leftPlane.c) + leftPlane.d) / denom ;
+    return vectorSum(point,scalarVector(vector,factor));
+    // Remembering that this result can be infinity , to treat on the upper method
+}
+
+function intersectPlaneUp(point,vector) {
+    let denom = ((vector.x * upPlane.a) + (vector.y * upPlane.b) + (vector.z * upPlane.c));
+    let factor = ((point.x * upPlane.a) + (point.y * upPlane.b) + (point.z * upPlane.c) + upPlane.d) / denom ;
+    return vectorSum(point,scalarVector(vector,factor));
+    // Remembering that this result can be infinity , to treat on the upper method
+}
+
+function intersectPlaneDown(point,vector) {
+    let denom = ((vector.x * downPlane.a) + (vector.y * downPlane.b) + (vector.z * downPlane.c));
+    let factor = ((point.x * downPlane.a) + (point.y * downPlane.b) + (point.z * downPlane.c) + downPlane.d) / denom ;
+    return vectorSum(point,scalarVector(vector,factor));
+    // Remembering that this result can be infinity , to treat on the upper method
+}
+
+function calculateBarycentricFactors3D(first, second, third, aim) {
+    let v0 = {x: second.x - first.x, y:second.y - first.y, z:second.z - first.z};
+    let v1 = {x: third.x - first.x, y:third.y - first.y, z:third.z - first.z};
+    let v2 = {x: aim.x - first.x, y:aim.y - first.y, z:aim.z - first.z};
+    let d00 = multiplicateFactorByFactor(v0,v0);
+    let d01 = multiplicateFactorByFactor(v0,v1);
+    let d11 = multiplicateFactorByFactor(v1,v1);
+    let d20 = multiplicateFactorByFactor(v2,v0);
+    let d21 = multiplicateFactorByFactor(v2,v1);
+    let denom = (d00 * d11) - (d01 * d01);
+    let v = ((d11 * d20) - (d01 * d21)) / denom;
+    let w = ((d00 * d21) - (d01 * d20)) / denom;
+    let u = 1 - v - w;
+    let barFactors = {alpha: u, beta: v, gama: w};
+    return barFactors;
 }
 
 // COMPLEX FUNCTIONS
@@ -241,6 +293,34 @@ function zBuffer(pointToBe,pointsAux,actual,yScan,bariFactors){
     }
 }
 
+function getPlanes() {
+    let firstVector = {x: halfWidth, y: 0, z: 0};
+    let secondVector = {x: 0, y: halfHeight, z: 0};
+    let point = {x: - halfWidth, y: -halfHeight, z: distance_cameraPlane};
+    let planeNormal = crossProductVector(firstVector,secondVector);
+    visionPlane = {a: planeNormal.x , b: planeNormal.y , c: planeNormal.z , d: ((planeNormal.x * -1 * point.x) + (planeNormal.y * -1 * point.y) + (planeNormal.z * -1 * point.z))};
+    firstVector = {x: halfWidth, y: 0, z: 0};
+    secondVector = {x: -halfWidth, y: -halfHeight, z: distance_cameraPlane};
+    point = {x: - halfWidth, y: -halfHeight, z: distance_cameraPlane};
+    planeNormal = crossProductVector(firstVector,secondVector);
+    downPlane = {a: planeNormal.x , b: planeNormal.y , c: planeNormal.z , d: ((planeNormal.x * -1 * point.x) + (planeNormal.y * -1 * point.y) + (planeNormal.z * -1 * point.z))};
+    firstVector = {x: halfWidth, y: 0, z: 0};
+    secondVector = {x: -halfWidth, y: halfHeight, z: distance_cameraPlane};
+    point = {x: - halfWidth, y: halfHeight, z: distance_cameraPlane};
+    planeNormal = crossProductVector(firstVector,secondVector);
+    upPlane = {a: planeNormal.x , b: planeNormal.y , c: planeNormal.z , d: ((planeNormal.x * -1 * point.x) + (planeNormal.y * -1 * point.y) + (planeNormal.z * -1 * point.z))};
+    firstVector = {x: 0, y: halfHeight, z: 0};
+    secondVector = {x: -halfWidth, y: -halfHeight, z: distance_cameraPlane};
+    point = {x: - halfWidth, y: -halfHeight, z: distance_cameraPlane};
+    planeNormal = crossProductVector(firstVector,secondVector);
+    leftPlane = {a: planeNormal.x , b: planeNormal.y , c: planeNormal.z , d: ((planeNormal.x * -1 * point.x) + (planeNormal.y * -1 * point.y) + (planeNormal.z * -1 * point.z))};
+    firstVector = {x: 0, y: halfHeight, z: 0};
+    secondVector = {x: halfWidth, y: halfHeight, z: distance_cameraPlane};
+    point = {x: halfWidth, y: -halfHeight, z: distance_cameraPlane};
+    planeNormal = crossProductVector(firstVector,secondVector);
+    rightPlane = {a: planeNormal.x , b: planeNormal.y , c: planeNormal.z , d: ((planeNormal.x * -1 * point.x) + (planeNormal.y * -1 * point.y) + (planeNormal.z * -1 * point.z))};
+}
+
 // LOOP MAIN FUNCTIONS
 
 function toCameraCoordinates() {
@@ -260,6 +340,61 @@ function toCameraCoordinates() {
         pointsArray[i].x = (futureX*U_vector.x + futureY*U_vector.y + futureZ*U_vector.z);
         pointsArray[i].y = (futureX*V_vector.x + futureY*V_vector.y + futureZ*V_vector.z);
         pointsArray[i].z = (futureX*N_vector.x + futureY*N_vector.y + futureZ*N_vector.z);
+    }
+}
+
+function scissors3DPyramid() {
+    let pointsAux = [];
+    let firstRightPlane = undefined;
+    let firstLeftPlane = undefined;
+    let firstUpPlane = undefined;
+    let firstDownPlane = undefined;
+    let firstVisionPlane = undefined;
+    let secondRightPlane = undefined;
+    let secondLeftPlane = undefined;
+    let secondUpPlane = undefined;
+    let secondDownPlane = undefined;
+    let secondVisionPlane = undefined;
+    let thirdRightPlane = undefined;
+    let thirdLeftPlane = undefined;
+    let thirdUpPlane = undefined;
+    let thirdDownPlane = undefined;
+    let thirdVisionPlane = undefined;
+    let firstVector = undefined;
+    let secondVector = undefined;
+    let thirdVector = undefined;
+    for (let i = 0; i < triangles; i++) {
+        pointsAux = [];
+        pointsAux.push(pointsArray[trianglesArray[i].first]);
+        pointsAux.push(pointsArray[trianglesArray[i].second]);
+        pointsAux.push(pointsArray[trianglesArray[i].third]);
+        pointsAux.sort(function(a,b) {return a.y - b.y}); // Making sort of the points by Y position on screen crescent order
+        if (pointsAux[0].y == pointsAux[1].y) { // Case of the triangle that has a flat base on the top
+            if (pointsAux[0].x > pointsAux[1].x) {
+                let aux = pointsAux[0];
+                pointsAux[0] = pointsAux[1];
+                pointsAux[1] = aux;
+            }
+        }
+        firstVector = {x:pointsAux[1].x - pointsAux[0].x, y: pointsAux[1].y - pointsAux[0].y, z: pointsAux[1].z - pointsAux[0].z};
+        secondVector = {x:pointsAux[2].x - pointsAux[0].x, y: pointsAux[2].y - pointsAux[0].y, z: pointsAux[2].z - pointsAux[0].z};
+        thirdVector = {x:pointsAux[2].x - pointsAux[1].x, y: pointsAux[2].y - pointsAux[1].y, z: pointsAux[2].z - pointsAux[1].z};
+        firstRightPlane = intersectPlaneRight(pointsAux[0],firstVector);
+        firstLeftPlane = intersectPlaneLeft(pointsAux[0],firstVector);
+        firstUpPlane = intersectPlaneUp(pointsAux[0],firstVector);
+        firstDownPlane = intersectPlaneDown(pointsAux[0],firstVector);
+        firstVisionPlane = intersectPlaneVision(pointsAux[0],firstVector);
+        secondRightPlane = intersectPlaneRight(pointsAux[0],secondVector);
+        secondLeftPlane = intersectPlaneLeft(pointsAux[0],secondVector);
+        secondUpPlane = intersectPlaneUp(pointsAux[0],secondVector);
+        secondDownPlane = intersectPlaneDown(pointsAux[0],secondVector);
+        secondVisionPlane = intersectPlaneVision(pointsAux[0],secondVector);
+        thirdRightPlane = intersectPlaneRight(pointsAux[1],thirdVector);
+        thirdLeftPlane = intersectPlaneLeft(pointsAux[1],thirdVector);
+        thirdUpPlane = intersectPlaneUp(pointsAux[1],thirdVector);
+        thirdDownPlane = intersectPlaneDown(pointsAux[1],thirdVector);
+        thirdVisionPlane = intersectPlaneVision(pointsAux[1],thirdVector);
+
     }
 }
 
@@ -537,8 +672,8 @@ btn_start.onclick = function doTheThing() {
     // Loading objects variables
 
     object = object.split(/[\r\n\s]+/).filter(function(el) {return ((el.length >0))});
-    let points = parseFloat(object[0]);
-    let triangles = parseFloat(object[1]);
+    points = parseFloat(object[0]);
+    triangles = parseFloat(object[1]);
     let initPoints = 2;
     let initTriangles = 2 + (points*3);
     let end = initTriangles + (triangles * 3);
@@ -581,6 +716,14 @@ let Rugo_constant = 0;
 let Spec_constant = 0;
 let Difu_constant = 0;
 let ARef_constant = 0;
+
+let points = 0;
+let triangles = 0;
+let visionPlane = undefined;
+let rightPlane = undefined;
+let leftPlane = undefined;
+let upPlane = undefined;
+let downPlane = undefined;
 
 let pointsArray = [];
 let trianglesArray = [];
