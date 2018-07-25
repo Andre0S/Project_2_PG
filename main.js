@@ -214,7 +214,13 @@ function pixelsToScreen(pX, pY) {
 }
 
 function getLineGrowth(firstPoint,secondPoint){
-    return ((secondPoint.Py - firstPoint.Py) / (secondPoint.Px - firstPoint.Px));//isso vai retornar o a, mas para usar o 1/a, basta inverter
+    let lineGrowth = 0;
+    if ((secondPoint.Py - firstPoint.Py) != 0) {
+        lineGrowth = ((secondPoint.Px - firstPoint.Px) / (secondPoint.Py - firstPoint.Py));
+    } else {
+        lineGrowth = 0;
+    }
+    return lineGrowth;//isso vai retornar o a, mas para usar o 1/a, basta inverter
 }
 
 function calculateBaricentricFactors(firstX, firstY, secondX, secondY, thirdX, thirdY, aimX, aimY) {
@@ -355,6 +361,15 @@ function calculateColor(vector_N,vector_L,vector_R,vector_V,z_Buffer) {
     return rgb_COLOR;
 }
 
+function diagonalPixel() {
+    let width = 0;
+    let height = 0;
+    let aux = pixelsToScreen(1,1);
+    width = aux.xS;
+    height = aux.yS;
+    return Math.sqrt(Math.pow(width,2) + Math.pow(height,2));
+}
+
 function scanLine(triangle) {
     let pointsAux = [];
     pointsAux.push(pointsArray[triangle.first]);
@@ -379,8 +394,8 @@ function scanLine(triangle) {
         }
         xMin = pointsAux[0].Px;
         xMax = pointsAux[1].Px;
-        firstLineGrowth = (1 / getLineGrowth(pointsAux[0],pointsAux[2]));
-        secondLineGrowth = (1 / getLineGrowth(pointsAux[1],pointsAux[2]));
+        firstLineGrowth = (getLineGrowth(pointsAux[0],pointsAux[2]));
+        secondLineGrowth = (getLineGrowth(pointsAux[1],pointsAux[2]));
         for (let yScan = pointsAux[0].Py; yScan <= yMax; yScan++) {
             for (let actual = Math.floor(xMin); actual <= Math.floor(xMax); actual++){
                 if (actual >= 0 && actual < horizontalCanvas && yScan >=0 && yScan < verticalCanvas) {
@@ -397,9 +412,9 @@ function scanLine(triangle) {
         xMin = pointsAux[0].Px;
         xMax = pointsAux[0].Px;
         if (pointsAux[1].Px > pointsAux[2].Px) {
-            firstLineGrowth = (1 / getLineGrowth(pointsAux[0],pointsAux[2]));
-            secondLineGrowth = (1 / getLineGrowth(pointsAux[0],pointsAux[1]));
-            thirdLineGrowth = (1 / getLineGrowth(pointsAux[2],pointsAux[1]));
+            firstLineGrowth = (getLineGrowth(pointsAux[0],pointsAux[2]));
+            secondLineGrowth = (getLineGrowth(pointsAux[0],pointsAux[1]));
+            thirdLineGrowth = (getLineGrowth(pointsAux[1],pointsAux[2]));
             for (let yScan = pointsAux[0].Py; yScan <= yMax; yScan++) {
                 for (let actual = Math.floor(xMin); actual <= Math.floor(xMax); actual++){
                     if (actual >= 0 && actual < horizontalCanvas && yScan >=0 && yScan < verticalCanvas) {
@@ -428,9 +443,9 @@ function scanLine(triangle) {
                 }
             }
         } else {
-            firstLineGrowth = (1 / getLineGrowth(pointsAux[0],pointsAux[1]));
-            secondLineGrowth = (1 / getLineGrowth(pointsAux[0],pointsAux[2]));
-            thirdLineGrowth = (1 / getLineGrowth(pointsAux[1],pointsAux[2]));
+            firstLineGrowth = (getLineGrowth(pointsAux[0],pointsAux[1]));
+            secondLineGrowth = (getLineGrowth(pointsAux[0],pointsAux[2]));
+            thirdLineGrowth = (getLineGrowth(pointsAux[1],pointsAux[2]));
 
             for (let yScan = pointsAux[0].Py; yScan <= yMax; yScan++) {
                 for (let actual = Math.floor(xMin); actual <= Math.floor(xMax); actual++){
@@ -486,6 +501,19 @@ function putColorInScreen() {//algoritmo do pintor
             ctx.fillRect( i, j, 1, 1 );
         }
     }
+    /*for (let i = trianglesArray.length - 1; i > -1; i--) {
+        ctx.beginPath();
+        ctx.moveTo(pointsArray[trianglesArray[i].first].Px,pointsArray[trianglesArray[i].first].Py);
+        ctx.lineTo(pointsArray[trianglesArray[i].second].Px,pointsArray[trianglesArray[i].second].Py);
+        ctx.lineTo(pointsArray[trianglesArray[i].third].Px,pointsArray[trianglesArray[i].third].Py);
+        ctx.lineTo(pointsArray[trianglesArray[i].first].Px,pointsArray[trianglesArray[i].first].Py);
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = '#ff6b00';
+        ctx.fillStyle = '#000000';
+        //ctx.fill();
+        ctx.stroke();
+        ctx.closePath();
+    }*/
 }
 
 
