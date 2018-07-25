@@ -102,6 +102,12 @@ function cosinTwoVectorsNotNormalized(firstVector,secondVector) {
     return returner/returner2;
 }
 
+function cosineThreePoints(point_O,point_A,point_B) {
+    let firstVector = {x:point_A.x - point_O.x, y:point_A.y - point_O.y, z:point_A.z - point_O.z};
+    let secondVector = {x:point_B.x - point_O.x, y:point_B.y - point_O.y, z:point_B.z - point_O.z};
+    return cosinTwoVectorsNotNormalized(firstVector,secondVector);
+}
+
 function projectionAonB(vector_A,vector_B) {
     let factor = cosinTwoVectors(vector_A,vector_B) / Math.sqrt(cosinTwoVectors(vector_B,vector_B));
     return {x: vector_B.x * factor , y: vector_B.y * factor , z: vector_B.z * factor };
@@ -132,8 +138,10 @@ function divideTriangles() {
         if (pointsToOrdinate[0].x == pointsToOrdinate[1].x) {
             if (pointsToOrdinate[0].x > pointsToOrdinate[1].x) {
                 let aux = pointsToOrdinate[1];
-
+                pointsToOrdinate[1] = pointsToOrdinate[0];
+                pointsToOrdinate[0] = aux;
             }
+            firstVector = {x:pointsToOrdinate[1].x - pointsToOrdinate[0].x, y:pointsToOrdinate[1].y - pointsToOrdinate[0].y, z:pointsToOrdinate[1].z - pointsToOrdinate[0].z};
         } else {
             if (pointsToOrdinate[1].y > pointsToOrdinate[2].y) {
 
@@ -261,10 +269,12 @@ function screenToPixels() {
     }
 }
 
-function screenToPixelsNotFloored(x_Screen,y_Screen) {
-        x_Screen = horizontalCanvas * ((1 + (x_Screen / halfWidth))/2);
-        y_Screen = verticalCanvas * ((1 - (y_Screen / halfHeight))/2);
-        return {x:x_Screen,y:y_Screen};
+function screenToPixelsX_axisNotFloored(x_Screen) {
+        return horizontalCanvas * ((1 + (x_Screen / halfWidth))/2);
+}
+
+function screenToPixelsY_axisNotFloored(y_Screen) {
+    return horizontalCanvas * ((1 - (y_Screen / halfWidth))/2);
 }
 
 function pixelsToScreen(pX, pY) {
@@ -466,7 +476,19 @@ function scanLine(triangle) {
     let auxiliar = undefined;
     let auxiliar2 = undefined;
     let thirdLiner = 'FALSE';
-    let obtuse = 'FALSE';
+    let firstVector= undefined;
+    let secondVector = undefined;
+    let flippedTriangle = 'F';
+    /*let extraPoint = {Xs:0,Ys:0,Px:0,Py:0}
+
+    if ((pointsAux[0].Py != pointsAux[1].Py) && (pointsAux[0].Py != pointsAux[2].Py) && (pointsAux[2].Py != pointsAux[1].Py)){
+        notStraightBase = 'TRUE';
+        firstVector = {x:pointsAux[2].Xs - pointsAux[1].Xs, y:pointsAux[2].Ys - pointsAux[1].Ys, z:0};
+        secondVector = {x:pointsAux[2].Xs - pointsAux[0].Xs, y:pointsAux[2].Ys - pointsAux[0].Ys, z:0};
+        auxiliar = projectionAonB(secondVector,firstVector);
+        auxiliar2 = vectorSum(auxiliar,scalarVector(secondVector,-1));
+        auxiliar = vectorSum({x:pointsAux[1].Xs, y:pointsAux[1].Ys, z:0},auxiliar2);
+    }*/
 
     if (pointsAux[0].Py == pointsAux[1].Py) {//caso do triango com dois pontos na base de cima
         if (pointsAux[0].Px > pointsAux[1].Px) {
@@ -474,43 +496,62 @@ function scanLine(triangle) {
             pointsAux[0] = pointsAux[1];
             pointsAux[1] = aux;
         }
-        auxiliar = screenToPixelsNotFloored(pointsAux[0].Xs, pointsAux[0].Ys);
-        auxiliar2 = screenToPixelsNotFloored(pointsAux[1].Xs, pointsAux[1].Ys);
-        xMin = auxiliar.x;
-        xMax = auxiliar2.x;
+        xMin = screenToPixelsX_axisNotFloored(pointsAux[0].Xs);
+        xMax = screenToPixelsX_axisNotFloored(pointsAux[1].Xs);
         firstLineGrowth = (getLineGrowth(pointsAux[0], pointsAux[2]));
         secondLineGrowth = (getLineGrowth(pointsAux[1], pointsAux[2]));
     } else {
-        auxiliar = screenToPixelsNotFloored(pointsAux[0].Xs,pointsAux[0].Ys);
-        xMin = auxiliar.x;
-        xMax = auxiliar.x;
+        xMin = screenToPixelsX_axisNotFloored(pointsAux[0].Xs);
+        xMax = screenToPixelsX_axisNotFloored(pointsAux[0].Xs);
         if (pointsAux[1].Px > pointsAux[2].Px) {
             firstLineGrowth = (getLineGrowth(pointsAux[0], pointsAux[2]));
             secondLineGrowth = (getLineGrowth(pointsAux[0], pointsAux[1]));
-            thirdLineGrowth = (getLineGrowth(pointsAux[1], pointsAux[2]));
+            if (firstLineGrowth > secondLineGrowth && pointsAux[1].Px < pointsAux[0].Px) {
+                auxiliar = firstLineGrowth;
+                firstLineGrowth = secondLineGrowth;
+                secondLineGrowth = auxiliar;
+                flippedTriangle = 'T';
+            }
         } else {
             firstLineGrowth = (getLineGrowth(pointsAux[0], pointsAux[1]));
             secondLineGrowth = (getLineGrowth(pointsAux[0], pointsAux[2]));
-            thirdLineGrowth = (getLineGrowth(pointsAux[2], pointsAux[1]));
+            if (firstLineGrowth > secondLineGrowth && pointsAux[1].Px > pointsAux[0].Px) {
+                auxiliar = firstLineGrowth;
+                firstLineGrowth = secondLineGrowth;
+                secondLineGrowth = auxiliar;
+                flippedTriangle = 'T';
+            }
         }
+        thirdLineGrowth = (getLineGrowth(pointsAux[1], pointsAux[2]));
+    }
+    if (cosineThreePoints(pointsAux[1],pointsAux[0],pointsAux[2]) < 0) {
+        console.log(firstLineGrowth + "  " + secondLineGrowth + "  " + thirdLineGrowth);
     }
     for (let yScan = pointsAux[0].Py; yScan <= yMax; yScan++) {
         for (let actual = Math.floor(xMin); actual <= Math.floor(xMax); actual++){
             if (actual >= 0 && actual < horizontalCanvas && yScan >=0 && yScan < verticalCanvas) {
                 pointScreen = pixelsToScreen(actual,yScan);
-                bariFactors = calculateBaricentricFactors(pointsAux[0].Xs,pointsAux[0].Ys,pointsAux[2].Xs,pointsAux[2].Ys,pointsAux[1].Xs,pointsAux[1].Ys,pointScreen.xS,pointScreen.yS);
-                pointToBe = calculateBaricentricSum(pointsAux[0],pointsAux[2],pointsAux[1],bariFactors);
+                bariFactors = calculateBaricentricFactors(pointsAux[0].Xs,pointsAux[0].Ys,pointsAux[1].Xs,pointsAux[1].Ys,pointsAux[2].Xs,pointsAux[2].Ys,pointScreen.xS,pointScreen.yS);
+                pointToBe = calculateBaricentricSum(pointsAux[0],pointsAux[1],pointsAux[2],bariFactors);
                 zBuffer(pointToBe,pointsAux,actual,yScan,bariFactors);
             }
         }
         if (pointsAux[0].Py != pointsAux[1].Py) {//caso do triango com dois pontos na base de cima
             if (pointsAux[1].Px > pointsAux[2].Px) {
                 if (yScan == pointsAux[1].Py && thirdLiner == 'FALSE') {
-                    thirdLiner = 'RIGHT';
+                    if (flippedTriangle == 'T') {
+                        thirdLiner = 'LEFT';
+                    } else {
+                        thirdLiner = 'RIGHT';
+                    }
                 }
             } else {
                 if (yScan == pointsAux[1].Py && thirdLiner == 'FALSE') {
-                    thirdLiner = 'LEFT';
+                    if (flippedTriangle == 'T') {
+                        thirdLiner = 'RIGHT';
+                    } else {
+                        thirdLiner = 'LEFT';
+                    }
                 }
             }
         }
@@ -529,7 +570,7 @@ function scanLine(triangle) {
 
 function zBuffer(pointToBe,pointsAux,actual,yScan,bariFactors){
     if (pointToBe.z < rgbMatrix[actual][yScan].z) {
-        let vector_N = calculateBaricentricNormal(pointsAux[0],pointsAux[2],pointsAux[1],bariFactors);
+        let vector_N = calculateBaricentricNormal(pointsAux[0],pointsAux[1],pointsAux[2],bariFactors);
         let vector_L = calculateLightVector(pointToBe,L_point);
         let vector_R = getReflectionVector(vector_N,vector_L);
         vector_R = normalize(vector_R);
@@ -641,7 +682,6 @@ btn_start.onclick = function doTheThing() {
     for (let i = 0; i < trianglesArray.length; i++) {
         scanLine(trianglesArray[i]);
     }
-    ctx.fillText("got here", 10, 10);
     putColorInScreen();
 
 };
