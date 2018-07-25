@@ -75,6 +75,13 @@ function scalarVector(vector, scalar) {
     return {x:(vector.x * scalar) , y:(vector.y * scalar) , z:(vector.z * scalar)};
 }
 
+function reflectNormal(vector_N,vector_V) {
+    let verticalVector = scalarVector(vector_V,cosinTwoVectors(vector_N,vector_V));
+    verticalVector = vectorSum(vector_N,scalarVector(verticalVector,-1));
+    let newNormal = getReflectionVector(verticalVector,vector_N);
+    return newNormal;
+}
+
 function multiplicateFactorByFactor(firstVector,secondVector){
     return (firstVector.x*secondVector.x) + (firstVector.y*secondVector.y) + (firstVector.z*secondVector.z);
 }
@@ -317,7 +324,7 @@ function calculateVisionVector(point) {
 function calculateColor(vector_N,vector_L,vector_R,vector_V,z_Buffer) {
     let rgb_COLOR = {r:0,g:0,b:0,z:z_Buffer};
     if (cosinTwoVectors(vector_N,vector_V) < 0) {
-        vector_N = scalarVector(vector_N,-1);
+        vector_N = reflectNormal(vector_N,vector_V);
     }
     if (cosinTwoVectors(vector_N,vector_L) < 0) {
         rgb_COLOR.r = ARef_constant * A_color.r;
@@ -378,8 +385,8 @@ function scanLine(triangle) {
             for (let actual = Math.floor(xMin); actual <= Math.floor(xMax); actual++){
                 if (actual >= 0 && actual < horizontalCanvas && yScan >=0 && yScan < verticalCanvas) {
                     pointScreen = pixelsToScreen(actual,yScan);
-                    bariFactors = calculateBaricentricFactors(pointsAux[0].Xs,pointsAux[0].Ys,pointsAux[1].Xs,pointsAux[1].Ys,pointsAux[2].Xs,pointsAux[2].Ys,pointScreen.xS,pointScreen.yS);
-                    pointToBe = calculateBaricentricSum(pointsAux[0],pointsAux[1],pointsAux[2],bariFactors);
+                    bariFactors = calculateBaricentricFactors(pointsAux[0].Xs,pointsAux[0].Ys,pointsAux[2].Xs,pointsAux[2].Ys,pointsAux[1].Xs,pointsAux[1].Ys,pointScreen.xS,pointScreen.yS);
+                    pointToBe = calculateBaricentricSum(pointsAux[0],pointsAux[2],pointsAux[1],bariFactors);
                     zBuffer(pointToBe,pointsAux,actual,yScan,bariFactors);
                 }
             }
@@ -429,8 +436,8 @@ function scanLine(triangle) {
                 for (let actual = Math.floor(xMin); actual <= Math.floor(xMax); actual++){
                     if (actual >= 0 && actual < horizontalCanvas && yScan >=0 && yScan < verticalCanvas) {
                         pointScreen = pixelsToScreen(actual,yScan);
-                        bariFactors = calculateBaricentricFactors(pointsAux[0].Xs,pointsAux[0].Ys,pointsAux[1].Xs,pointsAux[1].Ys,pointsAux[2].Xs,pointsAux[2].Ys,pointScreen.xS,pointScreen.yS);
-                        pointToBe = calculateBaricentricSum(pointsAux[0],pointsAux[1],pointsAux[2],bariFactors);
+                        bariFactors = calculateBaricentricFactors(pointsAux[0].Xs,pointsAux[0].Ys,pointsAux[2].Xs,pointsAux[2].Ys,pointsAux[1].Xs,pointsAux[1].Ys,pointScreen.xS,pointScreen.yS);
+                        pointToBe = calculateBaricentricSum(pointsAux[0],pointsAux[2],pointsAux[1],bariFactors);
                         zBuffer(pointToBe,pointsAux,actual,yScan,bariFactors);
                     }
                 }
