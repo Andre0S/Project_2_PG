@@ -83,7 +83,7 @@ function reflectNormal(vector_N,vector_V) {
 }
 
 function multiplicateFactorByFactor(firstVector,secondVector){
-    return (firstVector.x*secondVector.x) + (firstVector.y*secondVector.y) + (firstVector.z*secondVector.z);
+    return (firstVector.x*secondVector.x) + (firstVector.y*secondVector.y);// + (firstVector.z*secondVector.z);
 }
 
 function vectorSum(firstVector,secondVector){
@@ -100,6 +100,11 @@ function cosinTwoVectorsNotNormalized(firstVector,secondVector) {
     let returner = ((firstVector.x * secondVector.x) + (firstVector.y * secondVector.y) + (firstVector.z * secondVector.z));
     let returner2 = Math.sqrt(Math.pow(firstVector.x,2) + Math.pow(firstVector.y,2) + Math.pow(firstVector.z,2)) * Math.sqrt(Math.pow(secondVector.x,2) + Math.pow(secondVector.y,2) + Math.pow(secondVector.z,2));
     return returner/returner2;
+}
+
+function projectionAonB(vector_A,vector_B) {
+    let factor = cosinTwoVectors(vector_A,vector_B) / Math.sqrt(cosinTwoVectors(vector_B,vector_B));
+    return {x: vector_B.x * factor , y: vector_B.y * factor , z: vector_B.z * factor };
 }
 
 function getNorma(vector) {
@@ -209,8 +214,14 @@ function screenToPixels() {
     }
 }
 
+function screenToPixelsNotFloored(x_Screen,y_Screen) {
+        x_Screen = horizontalCanvas * ((1 + (x_Screen / halfWidth))/2);
+        y_Screen = verticalCanvas * ((1 - (y_Screen / halfHeight))/2);
+        return {x:x_Screen,y:y_Screen};
+}
+
 function pixelsToScreen(pX, pY) {
-    return {xS:(((((pX + 0.5) / horizontalCanvas) * 2) - 1) * halfWidth), yS:(((((pY + 0.5) / verticalCanvas) * 2) - 1) * halfHeight * -1)};
+    return {xS:(((((pX) / horizontalCanvas) * 2) - 1) * halfWidth), yS:((((((pY) / verticalCanvas) * 2) - 1) * halfHeight) * -1)};
 }
 
 function getLineGrowth(firstPoint,secondPoint){
@@ -224,25 +235,25 @@ function getLineGrowth(firstPoint,secondPoint){
 }
 
 function calculateBaricentricFactors(firstX, firstY, secondX, secondY, thirdX, thirdY, aimX, aimY) {
-    let barFactors = {alpha: 0, beta: 0, gama: 0};
-    let v0 = {x: secondX - firstX, y:secondY - firstY, z:0};
-    let v1 = {x: thirdX - firstX, y:thirdY - firstY, z:0};
-    let v2 = {x: aimX - firstX, y:aimY - firstY, z:0};
+    let v0 = {x: secondX - firstX, y:secondY - firstY};//, z:0};
+    let v1 = {x: thirdX - firstX, y:thirdY - firstY};//, z:0};
+    let v2 = {x: aimX - firstX, y:aimY - firstY};//, z:0};
     let d00 = multiplicateFactorByFactor(v0,v0);
     let d01 = multiplicateFactorByFactor(v0,v1);
     let d11 = multiplicateFactorByFactor(v1,v1);
-    let d20 = multiplicateFactorByFactor(v0,v2);
-    let d21 = multiplicateFactorByFactor(v1,v2);
-    let denom = (d00 * d01) - Math.pow(d01,2);
-    barFactors.alpha = ((d11 * d20) - (d01 * d21))
-    /*
-    let firstVector = {x: thirdX - firstX, y:thirdY - firstY, z:0};
+    let d20 = multiplicateFactorByFactor(v2,v0);
+    let d21 = multiplicateFactorByFactor(v2,v1);
+    let denom = (d00 * d11) - (d01 * d01);
+    let v = ((d11 * d20) - (d01 * d21)) / denom;
+    let w = ((d00 * d21) - (d01 * d20)) / denom;
+    let u = 1 - v - w;
+    let barFactors = {alpha: u, beta: v, gama: w};
+    /*let firstVector = {x: thirdX - firstX, y:thirdY - firstY, z:0};
     let secondVector = {x: secondX - firstX, y:secondY - firstY, z:0};
     let cosin = cosinTwoVectorsNotNormalized(firstVector,secondVector);
     let barFactors = {alpha: 0, beta: 0, gama: 0};
     if (cosin != -1 && cosin != 1) {
-
-        let areaTriangle = multiplicateFactorByFactor(crossProductVector(firstVector,secondVector));
+        let areaTriangle = getNorma(crossProductVector(firstVector,secondVector));
         firstVector = {x: thirdX - aimX, y:thirdY - aimY, z:0};
         secondVector = {x: secondX - aimX, y:secondY - aimY, z:0};
         barFactors.alpha = getNorma(crossProductVector(firstVector,secondVector)) / (areaTriangle);
@@ -373,6 +384,11 @@ function calculateColor(vector_N,vector_L,vector_R,vector_V,z_Buffer) {
     if (rgb_COLOR.b > 255) {
         rgb_COLOR.b = 255;
     }
+
+    rgb_COLOR.r = Math.floor(rgb_COLOR.r);
+    rgb_COLOR.g = Math.floor(rgb_COLOR.g);
+    rgb_COLOR.b = Math.floor(rgb_COLOR.b);
+
     return rgb_COLOR;
 }
 //
@@ -400,15 +416,20 @@ function scanLine(triangle) {
     let pointScreen = undefined;
     let bariFactors = undefined;
     let pointToBe = {x:0,y:0,z:0};
+    let auxiliar = undefined;
+    let auxiliar2 = undefined;
     let thirdLiner = 'FALSE';
+
     if (pointsAux[0].Py == pointsAux[1].Py) {//caso do triango com dois pontos na base de cima
         if (pointsAux[0].Px > pointsAux[1].Px) {
             let aux = pointsAux[0];
             pointsAux[0] = pointsAux[1];
             pointsAux[1] = aux;
         }
-        xMin = pointsAux[0].Px;
-        xMax = pointsAux[1].Px;
+        auxiliar = screenToPixelsNotFloored(pointsAux[0].Xs,pointsAux[0].Ys);
+        auxiliar2 = screenToPixelsNotFloored(pointsAux[1].Xs,pointsAux[1].Ys);
+        xMin = auxiliar.x;
+        xMax = auxiliar2.x;
         firstLineGrowth = (getLineGrowth(pointsAux[0],pointsAux[2]));
         secondLineGrowth = (getLineGrowth(pointsAux[1],pointsAux[2]));
         for (let yScan = pointsAux[0].Py; yScan <= yMax; yScan++) {
@@ -424,8 +445,9 @@ function scanLine(triangle) {
             xMax += secondLineGrowth;
         }
     } else {//outros 3 tipos de triangulo
-        xMin = pointsAux[0].Px;
-        xMax = pointsAux[0].Px;
+        auxiliar = screenToPixelsNotFloored(pointsAux[0].Xs,pointsAux[0].Ys);
+        xMin = auxiliar.x;
+        xMax = auxiliar.x;
         if (pointsAux[1].Px > pointsAux[2].Px) {
             firstLineGrowth = (getLineGrowth(pointsAux[0],pointsAux[2]));
             secondLineGrowth = (getLineGrowth(pointsAux[0],pointsAux[1]));
@@ -440,11 +462,12 @@ function scanLine(triangle) {
                     }
                 }
                 if (yScan == pointsAux[1].Py && thirdLiner == 'FALSE') {
-                    if (xMin==pointsAux[2].Px) {
+                    thirdLiner = 'RIGHT';
+                    /*if (xMin==pointsAux[2].Px) {
                         thirdLiner = 'LEFT';
                     } else if (xMax == pointsAux[1].Px) {
                         thirdLiner = 'RIGHT';
-                    }
+                    }*/
                 }
                 if (thirdLiner == 'FALSE') {
                     xMin += firstLineGrowth;
@@ -469,15 +492,15 @@ function scanLine(triangle) {
                         bariFactors = calculateBaricentricFactors(pointsAux[0].Xs,pointsAux[0].Ys,pointsAux[2].Xs,pointsAux[2].Ys,pointsAux[1].Xs,pointsAux[1].Ys,pointScreen.xS,pointScreen.yS);
                         pointToBe = calculateBaricentricSum(pointsAux[0],pointsAux[2],pointsAux[1],bariFactors);
                         zBuffer(pointToBe,pointsAux,actual,yScan,bariFactors);
-                        console.log(bariFactors.alpha + bariFactors.beta + bariFactors.gama);
                     }
                 }
                 if (yScan == pointsAux[1].Py && thirdLiner == 'FALSE') {
-                    if (xMin==pointsAux[1].Px) {
+                    thirdLiner = 'LEFT';
+                    /*if (xMin==pointsAux[1].Px) {
                         thirdLiner = 'LEFT';
                     } else if (xMax == pointsAux[2].Px) {
                         thirdLiner = 'RIGHT';
-                    }
+                    }*/
                 }
                 if (thirdLiner == 'FALSE') {
                     xMin += firstLineGrowth;
@@ -502,9 +525,6 @@ function zBuffer(pointToBe,pointsAux,actual,yScan,bariFactors){
         vector_R = normalize(vector_R);
         let vector_V = calculateVisionVector(pointToBe);
         let rgb_COLOR = calculateColor(vector_N,vector_L,vector_R,vector_V,pointToBe.z);
-        rgb_COLOR.r = Math.floor(rgb_COLOR.r);
-        rgb_COLOR.g = Math.floor(rgb_COLOR.g);
-        rgb_COLOR.b = Math.floor(rgb_COLOR.b);
         rgbMatrix[actual][yScan] = rgb_COLOR;
     }
 }
@@ -599,7 +619,7 @@ btn_start.onclick = function doTheThing() {
         pointsArray.push({x:parseFloat(object[i]),y:parseFloat(object[i+1]),z:parseFloat(object[i+2]),Nx:0,Ny:0,Nz:0,Xs:0,Ys:0,Px:0,Py:0});
     }
     for (let i = initTriangles; i < end; i+=3) {
-        trianglesArray.push({first:(parseFloat(object[i])-1),second:(parseFloat(object[i+1]))-1,third:(parseFloat(object[i+2])-1),distance:0,Nx:0,Ny:0,Nz:0});
+        trianglesArray.push({first:(parseInt(object[i])-1),second:(parseInt(object[i+1]))-1,third:(parseInt(object[i+2])-1),distance:0,Nx:0,Ny:0,Nz:0});
     }
     toCameraCoordinates();
     calculateTrianglesNormal();
@@ -612,7 +632,6 @@ btn_start.onclick = function doTheThing() {
         scanLine(trianglesArray[i]);
     }
     ctx.fillText("got here", 10, 10);
-    console.log(rgbMatrix);
     putColorInScreen();
 
 };
