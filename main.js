@@ -224,31 +224,45 @@ function getLineGrowth(firstPoint,secondPoint){
 }
 
 function calculateBaricentricFactors(firstX, firstY, secondX, secondY, thirdX, thirdY, aimX, aimY) {
-    let first = {x: thirdX - firstX, y:thirdY - firstY, z:0};
-    let second = {x: secondX - firstX, y:secondY - firstY, z:0};
-    let cosin = cosinTwoVectorsNotNormalized(first,second);
+    let barFactors = {alpha: 0, beta: 0, gama: 0};
+    let v0 = {x: secondX - firstX, y:secondY - firstY, z:0};
+    let v1 = {x: thirdX - firstX, y:thirdY - firstY, z:0};
+    let v2 = {x: aimX - firstX, y:aimY - firstY, z:0};
+    let d00 = multiplicateFactorByFactor(v0,v0);
+    let d01 = multiplicateFactorByFactor(v0,v1);
+    let d11 = multiplicateFactorByFactor(v1,v1);
+    let d20 = multiplicateFactorByFactor(v0,v2);
+    let d21 = multiplicateFactorByFactor(v1,v2);
+    let denom = (d00 * d01) - Math.pow(d01,2);
+    barFactors.alpha = ((d11 * d20) - (d01 * d21))
+    /*
+    let firstVector = {x: thirdX - firstX, y:thirdY - firstY, z:0};
+    let secondVector = {x: secondX - firstX, y:secondY - firstY, z:0};
+    let cosin = cosinTwoVectorsNotNormalized(firstVector,secondVector);
     let barFactors = {alpha: 0, beta: 0, gama: 0};
     if (cosin != -1 && cosin != 1) {
-        first = {x: thirdX - firstX, y:thirdY - firstY, z:0};
-        second = {x: secondX - firstX, y:secondY - firstY, z:0};
-        let areaTriangle = getNorma(crossProductVector(first,second));
-        first = {x: thirdX - aimX, y:thirdY - aimY, z:0};
-        second = {x: secondX - aimX, y:secondY - aimY, z:0};
-        barFactors.alpha = getNorma(crossProductVector(first,second)) / areaTriangle;
-        first = {x: thirdX - aimX, y:thirdY - aimY, z:0};
-        second = {x: firstX - aimX, y:firstY - aimY, z:0};
-        barFactors.beta = getNorma(crossProductVector(first,second)) / areaTriangle;
-        first = {x: secondX - aimX, y:secondY - aimY, z:0};
-        second = {x: firstX - aimX, y:firstY - aimY, z:0};
-        barFactors.gama = getNorma(crossProductVector(first,second)) / areaTriangle;
+
+        let areaTriangle = multiplicateFactorByFactor(crossProductVector(firstVector,secondVector));
+        firstVector = {x: thirdX - aimX, y:thirdY - aimY, z:0};
+        secondVector = {x: secondX - aimX, y:secondY - aimY, z:0};
+        barFactors.alpha = getNorma(crossProductVector(firstVector,secondVector)) / (areaTriangle);
+        firstVector = {x: thirdX - aimX, y:thirdY - aimY, z:0};
+        secondVector = {x: firstX - aimX, y:firstY - aimY, z:0};
+        barFactors.beta = getNorma(crossProductVector(firstVector,secondVector)) / (areaTriangle);
+        firstVector = {x: secondX - aimX, y:secondY - aimY, z:0};
+        secondVector = {x: firstX - aimX, y:firstY - aimY, z:0};
+        barFactors.gama = getNorma(crossProductVector(firstVector,secondVector)) / (areaTriangle);
+        if ((barFactors.alpha + barFactors.beta + barFactors.gama) > 2){
+            debugger;
+        }
     } else if (cosin == -1) {
         barFactors.alpha = 0;
         let sizeLine = Math.sqrt(Math.pow((thirdX - secondX),2) + Math.pow((thirdY - secondY),2));
         barFactors.beta = Math.sqrt(Math.pow((secondX - aimX),2) + Math.pow((secondY - aimY),2)) / sizeLine;
         barFactors.gama = Math.sqrt(Math.pow((thirdX - aimX),2) + Math.pow((thirdY - aimY),2)) / sizeLine;
     } else {
-        let norma1 = getNorma(first);
-        let norma2 = getNorma(second);
+        let norma1 = getNorma(firstVector);
+        let norma2 = getNorma(secondVector);
         if (norma1 >= norma2) {
             barFactors.beta = 0;
             let sizeLine = Math.sqrt(Math.pow((thirdX - firstX),2) + Math.pow((thirdY - firstY),2));
@@ -260,7 +274,7 @@ function calculateBaricentricFactors(firstX, firstY, secondX, secondY, thirdX, t
             barFactors.alpha = Math.sqrt(Math.pow((firstX - aimX),2) + Math.pow((firstY - aimY),2)) / sizeLine;
             barFactors.beta = Math.sqrt(Math.pow((secondX - aimX),2) + Math.pow((secondY - aimY),2)) / sizeLine;
         }
-    }
+    }*/
     /*let B = [[1,1,1,1],[firstX,secondX,thirdX,aimX],[firstY,secondY,thirdY,aimY]];
     let factor1 = 0;
     let factor2 = 0;
@@ -297,7 +311,8 @@ function calculateBaricentricFactors(firstX, firstY, secondX, secondY, thirdX, t
         for (let k = i; k <4; k++) {
             B[i][k] = B[i][k] * factor1;
         }
-    }*/
+    }
+    let barFactors = {alpha: B[0][3], beta: B[1][3], gama: B[2][3]};*/
     //ctx.fillText(B[0][0] + ' ' + B[0][1] + ' ' + B[0][2] + ' ' + B[0][3], 10, 10);
     //ctx.fillText(B[1][0] + ' ' + B[1][1] + ' ' + B[1][2] + ' ' + B[1][3], 10, 30);
     //ctx.fillText(B[2][0] + ' ' + B[2][1] + ' ' + B[2][2] + ' ' + B[2][3], 10, 50);
@@ -360,15 +375,15 @@ function calculateColor(vector_N,vector_L,vector_R,vector_V,z_Buffer) {
     }
     return rgb_COLOR;
 }
-
-function diagonalPixel() {
-    let width = 0;
-    let height = 0;
-    let aux = pixelsToScreen(1,1);
-    width = aux.xS;
-    height = aux.yS;
-    return Math.sqrt(Math.pow(width,2) + Math.pow(height,2));
-}
+//
+// function diagonalPixel() {
+//     let width = 0;
+//     let height = 0;
+//     let aux = pixelsToScreen(1,1);
+//     width = aux.xS;
+//     height = aux.yS;
+//     return Math.sqrt(Math.pow(width,2) + Math.pow(height,2));
+// }
 
 function scanLine(triangle) {
     let pointsAux = [];
@@ -454,6 +469,7 @@ function scanLine(triangle) {
                         bariFactors = calculateBaricentricFactors(pointsAux[0].Xs,pointsAux[0].Ys,pointsAux[2].Xs,pointsAux[2].Ys,pointsAux[1].Xs,pointsAux[1].Ys,pointScreen.xS,pointScreen.yS);
                         pointToBe = calculateBaricentricSum(pointsAux[0],pointsAux[2],pointsAux[1],bariFactors);
                         zBuffer(pointToBe,pointsAux,actual,yScan,bariFactors);
+                        console.log(bariFactors.alpha + bariFactors.beta + bariFactors.gama);
                     }
                 }
                 if (yScan == pointsAux[1].Py && thirdLiner == 'FALSE') {
@@ -510,7 +526,7 @@ function putColorInScreen() {//algoritmo do pintor
         ctx.lineWidth = 1;
         ctx.strokeStyle = '#ff6b00';
         ctx.fillStyle = '#000000';
-        //ctx.fill();
+        ctx.fill();
         ctx.stroke();
         ctx.closePath();
     }*/
