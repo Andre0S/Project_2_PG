@@ -117,6 +117,53 @@ function normalize(vector) {
     return returner;
 }
 
+function divideTriangles() {
+    let firstVector = undefined;
+    let secondVector = undefined;
+    let normal = undefined;
+    let actualTriangle = undefined;
+    for (let i = 0; i < trianglesArray.length; i++) {
+        actualTriangle = trianglesArray[i];
+        let pointsToOrdinate = [];
+        pointsToOrdinate.push(pointsArray[actualTriangle.first]);
+        pointsToOrdinate.push(pointsArray[actualTriangle.second]);
+        pointsToOrdinate.push(pointsArray[actualTriangle.third]);
+        pointsToOrdinate.sort(function(a,b) {return a.y - b.y});
+        if (pointsToOrdinate[0].x == pointsToOrdinate[1].x) {
+            if (pointsToOrdinate[0].x > pointsToOrdinate[1].x) {
+                let aux = pointsToOrdinate[1];
+
+            }
+        } else {
+            if (pointsToOrdinate[1].y > pointsToOrdinate[2].y) {
+
+            } else {
+
+            }
+        }
+        firstVector = {x:pointsArray[actualTriangle.first].x - pointsArray[actualTriangle.second].x,
+            y:pointsArray[actualTriangle.first].y - pointsArray[actualTriangle.second].y,
+            z:pointsArray[actualTriangle.first].z - pointsArray[actualTriangle.second].z};
+        secondVector = {x:pointsArray[actualTriangle.third].x - pointsArray[actualTriangle.second].x,
+            y:pointsArray[actualTriangle.third].y - pointsArray[actualTriangle.second].y,
+            z:pointsArray[actualTriangle.third].z - pointsArray[actualTriangle.second].z};
+        normal = crossProductVector(firstVector,secondVector);
+        normal = normalize(normal);
+        trianglesArray[i].Nx = normal.x;
+        trianglesArray[i].Ny = normal.y;
+        trianglesArray[i].Nz = normal.z;
+        pointsArray[actualTriangle.first].Nx += normal.x;
+        pointsArray[actualTriangle.first].Ny += normal.y;
+        pointsArray[actualTriangle.first].Nz += normal.z;
+        pointsArray[actualTriangle.second].Nx += normal.x;
+        pointsArray[actualTriangle.second].Ny += normal.y;
+        pointsArray[actualTriangle.second].Nz += normal.z;
+        pointsArray[actualTriangle.third].Nx += normal.x;
+        pointsArray[actualTriangle.third].Ny += normal.y;
+        pointsArray[actualTriangle.third].Nz += normal.z;
+    }
+}
+
 function toCameraCoordinates() {
     let futureZ = 0;
     let futureY = 0;
@@ -434,12 +481,6 @@ function scanLine(triangle) {
         firstLineGrowth = (getLineGrowth(pointsAux[0], pointsAux[2]));
         secondLineGrowth = (getLineGrowth(pointsAux[1], pointsAux[2]));
     } else {
-        let firstVector = {x:pointsAux[0].Xs - pointsAux[1].Xs, y: pointsAux[0].Ys - pointsAux[1].Ys, z:0};
-        let secondVector = {x:pointsAux[2].Xs - pointsAux[1].Xs, y: pointsAux[2].Ys - pointsAux[1].Ys, z:0};
-        let cosine = cosinTwoVectorsNotNormalized(firstVector,secondVector);
-        if (cosine <0) {
-            obtuse = 'TRUE';
-        }
         auxiliar = screenToPixelsNotFloored(pointsAux[0].Xs,pointsAux[0].Ys);
         xMin = auxiliar.x;
         xMax = auxiliar.x;
@@ -450,57 +491,40 @@ function scanLine(triangle) {
         } else {
             firstLineGrowth = (getLineGrowth(pointsAux[0], pointsAux[1]));
             secondLineGrowth = (getLineGrowth(pointsAux[0], pointsAux[2]));
-            thirdLineGrowth = (getLineGrowth(pointsAux[1], pointsAux[2]));
+            thirdLineGrowth = (getLineGrowth(pointsAux[2], pointsAux[1]));
         }
     }
-        for (let yScan = pointsAux[0].Py; yScan <= yMax; yScan++) {
-            for (let actual = Math.floor(xMin); actual <= Math.floor(xMax); actual++){
-                if (actual >= 0 && actual < horizontalCanvas && yScan >=0 && yScan < verticalCanvas) {
-                    pointScreen = pixelsToScreen(actual,yScan);
-                    if (obtuse == 'TRUE') {
-                        bariFactors = calculateBaricentricFactors(pointsAux[0].Xs,pointsAux[0].Ys,pointsAux[1].Xs,pointsAux[1].Ys,pointsAux[2].Xs,pointsAux[2].Ys,pointScreen.xS,pointScreen.yS);
-                        pointToBe = calculateBaricentricSum(pointsAux[0],pointsAux[1],pointsAux[2],bariFactors);
-                        console.log(" Alpha: " + bariFactors.alpha + " Beta: " + bariFactors.beta + " Gama: " + bariFactors.gama);
-                    } else {
-                        bariFactors = calculateBaricentricFactors(pointsAux[0].Xs,pointsAux[0].Ys,pointsAux[2].Xs,pointsAux[2].Ys,pointsAux[1].Xs,pointsAux[1].Ys,pointScreen.xS,pointScreen.yS);
-                        pointToBe = calculateBaricentricSum(pointsAux[0],pointsAux[2],pointsAux[1],bariFactors);
-                    }
-                    zBuffer(pointToBe,pointsAux,actual,yScan,bariFactors);
-                }
-            }
-            if (pointsAux[0].Py != pointsAux[1].Py) {//caso do triango com dois pontos na base de cima
-                if (pointsAux[1].Px > pointsAux[2].Px) {
-                    if (yScan == pointsAux[1].Py && thirdLiner == 'FALSE') {
-                        thirdLiner = 'RIGHT';
-                        /*if (xMin==pointsAux[2].Px) {
-                            thirdLiner = 'LEFT';
-                        } else if (xMax == pointsAux[1].Px) {
-                            thirdLiner = 'RIGHT';
-                        }*/
-                    }
-                } else {
-                    if (yScan == pointsAux[1].Py && thirdLiner == 'FALSE') {
-                        thirdLiner = 'LEFT';
-                        /*if (xMin==pointsAux[1].Px) {
-                            thirdLiner = 'LEFT';
-                        } else if (xMax == pointsAux[2].Px) {
-                            thirdLiner = 'RIGHT';
-                        }*/
-                    }
-                }
-            }
-            if (thirdLiner == 'FALSE') {
-                xMin += firstLineGrowth;
-                xMax += secondLineGrowth;
-            } else if (thirdLiner == 'LEFT') {
-                xMin += thirdLineGrowth;
-                xMax += secondLineGrowth;
-            } else if (thirdLiner == 'RIGHT') {
-                xMin += firstLineGrowth;
-                xMax += thirdLineGrowth;
+    for (let yScan = pointsAux[0].Py; yScan <= yMax; yScan++) {
+        for (let actual = Math.floor(xMin); actual <= Math.floor(xMax); actual++){
+            if (actual >= 0 && actual < horizontalCanvas && yScan >=0 && yScan < verticalCanvas) {
+                pointScreen = pixelsToScreen(actual,yScan);
+                bariFactors = calculateBaricentricFactors(pointsAux[0].Xs,pointsAux[0].Ys,pointsAux[2].Xs,pointsAux[2].Ys,pointsAux[1].Xs,pointsAux[1].Ys,pointScreen.xS,pointScreen.yS);
+                pointToBe = calculateBaricentricSum(pointsAux[0],pointsAux[2],pointsAux[1],bariFactors);
+                zBuffer(pointToBe,pointsAux,actual,yScan,bariFactors);
             }
         }
-
+        if (pointsAux[0].Py != pointsAux[1].Py) {//caso do triango com dois pontos na base de cima
+            if (pointsAux[1].Px > pointsAux[2].Px) {
+                if (yScan == pointsAux[1].Py && thirdLiner == 'FALSE') {
+                    thirdLiner = 'RIGHT';
+                }
+            } else {
+                if (yScan == pointsAux[1].Py && thirdLiner == 'FALSE') {
+                    thirdLiner = 'LEFT';
+                }
+            }
+        }
+        if (thirdLiner == 'FALSE') {
+            xMin += firstLineGrowth;
+            xMax += secondLineGrowth;
+        } else if (thirdLiner == 'LEFT') {
+            xMin += thirdLineGrowth;
+            xMax += secondLineGrowth;
+        } else if (thirdLiner == 'RIGHT') {
+            xMin += firstLineGrowth;
+            xMax += thirdLineGrowth;
+        }
+    }
 }
 
 function zBuffer(pointToBe,pointsAux,actual,yScan,bariFactors){
