@@ -520,7 +520,7 @@ btn_start.onclick = function doTheThing() {
     }
     for (let i = 0; i < horizontalCanvas; i++) {
         for (let j = 0; j < verticalCanvas; j++) {
-            rgbMatrix[i][j] = {r:A_color.r,g:A_color.g,b:A_color.b,z:Infinity};
+            rgbMatrix[i][j] = {r:0,g:0,b:0,z:Infinity};
         }
     }
     V_vector = orthogonalizeVector(V_vector,N_vector);
